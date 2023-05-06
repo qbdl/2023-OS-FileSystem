@@ -1,2 +1,14 @@
-# 2023-OS-FileSystem
-2023操作系统课设——多用户二级文件系统
+# fs_tjos
+file system lab of Tongji OS course
+
+run in Linux Operation System
+
+
+
+### 一、Start
+
+​	git clone 
+
+### 二、Init 初始化磁盘
+
+​	
