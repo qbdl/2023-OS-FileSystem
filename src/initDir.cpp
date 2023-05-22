@@ -1,8 +1,8 @@
-#include"superBlock.h" //sblock
-#include"diskInode.h" //DiskInode
-#include"initDir.h"//初始化目录
-#include"parameter.h"//文件系统通用参数
-#include"directory.h"
+#include"../include/superBlock.h" //sblock
+#include"../include/diskInode.h" //DiskInode
+#include"../include/initDir.h"//初始化目录
+#include"../include/parameter.h"//文件系统通用参数
+#include"../include/directory.h"
 #include <iostream>
 #include <sys/mman.h>
 #include <sys/stat.h>

@@ -1,27 +1,30 @@
 CC=g++
 CFLAGS=-c -std=c++11
 
-#生成文件
-TARGET=init
+TARGET=init #生成文件
 
-#
-SRCS=init.cpp initDir.cpp
-
+#源文件和对象文件
+SRCS=src/init.cpp src/initDir.cpp
 OBJS=$(SRCS:.cpp=.o)
 
 #依赖文件
-DEPS=diskInode.h superBlock.h directory.h initDir.h parameter.h
+DEPS=$(wildcard include/*.h)
 
+# 声明了伪目标all和clean，避免因文件名与目标同名而导致的错误
+.PHONY: all clean
+
+#默认目标
 all: $(TARGET)
-	rm -f *.o
-
+	rm -f src/*.o
+#链接目标文件生成目标程序
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET)
 
-# 生成目标文件的依赖关系
+#编译源文件生成目标文件
 %.o: %.cpp $(DEPS)
 	$(CC) $(CFLAGS) $< -o $@
 
+#清除目标
 clean:
 	rm -f $(OBJS) $(TARGET)
 	rm -f *.img
