@@ -28,3 +28,4 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(OBJS) $(TARGET)
 	rm -f *.img
+	rm -f init
