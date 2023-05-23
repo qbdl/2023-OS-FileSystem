@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     init_superblock();
 
     //开始扫描文件 并创建对应普通文件与目录文件
-    scan_path("../my_test");
+    scan_path("my_test");
 
     int size = 0;
     //初次拷贝，superblock, inode ,部分data
