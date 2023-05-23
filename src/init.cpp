@@ -1,8 +1,8 @@
 //初始化磁盘
-#include "superBlock.h"        // superblock相关
-#include "diskInode.h"    // inode相关
-#include "initDir.h"  // 初始化目录
-#include "parameter.h" // 所有全局const int变量
+#include "../include/superBlock.h"        // superblock相关
+#include "../include/diskInode.h"    // inode相关
+#include "../include/initDir.h"  // 初始化目录
+#include "../include/parameter.h" // 所有全局const int变量
 #include <string>
 #include <iostream>
 #include <sys/mman.h>
@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
-
 using namespace std;
 
 //Global Variables
@@ -23,7 +22,6 @@ const int PAGE_SIZE = 4 * 1024; // mmap 限定4KB的倍数，这里取4 KB
 void init_superblock()
 {
     sblock.s_isize=INODE_NUM*INODE_SIZE/BLOCK_SIZE;//Inode区占用的盘块数  12.5~=12
-    // printf("%d",sblock.s_isize);
     sblock.s_fsize=FILE_SIZE/BLOCK_SIZE;//盘块总数——Block总数
 
     //初始化 Inode及栈
@@ -112,6 +110,7 @@ int main(int argc, char *argv[])
 {
     const char *file_path = "myDisk.img";
     int fd;
+    
     if (argc > 1)
         fd = open(argv[1], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);//读写权限
     else
@@ -137,7 +136,7 @@ int main(int argc, char *argv[])
     init_superblock();
 
     //开始扫描文件 并创建对应普通文件与目录文件
-    scan_path("./my_test");
+    scan_path("my_test");
 
     int size = 0;
     //初次拷贝，superblock, inode ,部分data
