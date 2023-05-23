@@ -2,8 +2,7 @@
 #include"../include/fs.h"
 
 #include "../include/superBlock.h"        // superblock相关
-#include "../include/diskInode.h"    // inode相关
-#include "../include/initDir.h"  // 初始化目录
+#include "../include/Inode.h"    // inode相关
 #include "../include/parameter.h" // 所有全局const int变量
 #include <string>
 #include <iostream>
@@ -14,14 +13,13 @@
 #include <cstring>
 using namespace std;
 
-//Global Variables
+//Disk Global Variables
 SuperBlock sblock;//SuperBlock区
 DiskInode dInode[INODE_NUM];//Inode区
 char data_[DATA_SIZE];//数据区
 
 const int PAGE_SIZE = 4 * 1024; // mmap 限定4KB的倍数，这里取4 KB
 
-FileSystem fs;
 
 void init_superblock()
 {
@@ -138,10 +136,6 @@ int main(int argc, char *argv[])
 
     // 初始化superblock
     init_superblock();
-
-    // //开始扫描文件 并创建对应普通文件与目录文件
-    fs.initialize_filetree_from_externalFile("my_test");
-    // scan_path("my_test");
 
     int size = 0;
     //初次拷贝，superblock, inode ,部分data

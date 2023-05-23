@@ -1,38 +1,111 @@
 #include"../include/fs.h"
-
 #include"../include/superBlock.h" //sblock
-#include"../include/diskInode.h" //DiskInode
-#include"../include/initDir.h"//初始化目录
+#include"../include/Inode.h" //DiskInode&Inode
 #include"../include/parameter.h"//文件系统通用参数
 #include"../include/directory.h"
 #include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <dirent.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
 
-// using namespace std;
+using namespace std;
 
-//extern Global Variables
-extern SuperBlock sblock;
-extern DiskInode dInode[INODE_NUM];
-extern char data_[DATA_SIZE];
+//初始化 读磁盘进内存变量
+//用fstream映射整个磁盘文件 进行操作
+FileSystem::FileSystem(std::string disk_path)
+{
+    /*init.cpp怎么写进去，这里就怎么读出来*/
+    fstream temp_disk(disk_path,ios::in|ios::out|ios::binary);
+    if(!temp_disk) {
+        cerr << "Failed to open disk file " << disk_path << "\n";
+        exit(EXIT_FAILURE);
+    }
+
+    //读取SuperBlock
+    temp_disk.seekg(0,ios::beg);
+    temp_disk.read(reinterpret_cast<char*>(&sblock), sizeof(SuperBlock));
+
+    //读取Inode
+    DiskInode dinodes[INODE_NUM];
+    temp_disk.seekg(OFFSET_INODE, ios::beg);
+    temp_disk.read(reinterpret_cast<char*>(&dinodes[0]), sizeof(DiskInode)*INODE_NUM);
+    for (int i=0; i<INODE_NUM;i++) {
+        inodes[i].i_ino = i;
+        inodes[i].i_lock=Inode::INITSTATE;
+        inodes[i].i_mode = dinodes[i].d_mode;
+        inodes[i].i_nlink = dinodes[i].d_nlink;
+        inodes[i].i_uid = dinodes[i].d_uid;
+        inodes[i].i_gid = dinodes[i].d_gid;
+        inodes[i].i_size = dinodes[i].d_size;
+        inodes[i].i_atime = dinodes[i].d_atime;
+        inodes[i].i_mtime = dinodes[i].d_mtime;
+        for (int j = 0; j < 10; j++)
+            inodes[i].i_addr[j] = dinodes[i].d_addr[j];
+    }
+
+    //读取数据区(empty)——后续修改(不读取全部数据区)
+    temp_disk.seekg(OFFSET_DATA,ios::beg);
+    temp_disk.read(reinterpret_cast<char*>(&data_[0]),sizeof(data_[0])*DATA_NUM);
+
+
+    //返回disk与disk_path
+    this->disk_path=disk_path;
+    this->disk=std::move(temp_disk);
+}
+
+//fstream的内容 写回磁盘文件
+FileSystem::~FileSystem()
+{
+    // superblock
+    disk.seekp(0, ios::beg);
+    disk.write(reinterpret_cast<char*>(&sblock), sizeof(SuperBlock));
+
+    //Inode
+    disk.seekp(OFFSET_INODE, ios::beg);
+    DiskInode dinodes[INODE_NUM];
+    for (int i=0; i<INODE_NUM;i++) {
+        dinodes[i].d_mode = inodes[i].i_mode;
+        dinodes[i].d_nlink = inodes[i].i_nlink;
+        dinodes[i].d_uid = inodes[i].i_uid;
+        dinodes[i].d_gid = inodes[i].i_gid;
+        dinodes[i].d_size = inodes[i].i_size;
+        dinodes[i].d_atime = inodes[i].i_atime;
+        dinodes[i].d_mtime = inodes[i].i_mtime;
+        for (int j = 0; j < 10; j++)
+            dinodes[i].d_addr[j] = inodes[i].i_addr[j];
+    }
+    disk.write(reinterpret_cast<char*>(&dinodes[0]), sizeof(DiskInode)*INODE_NUM);
+
+    //data
+    //真正的文件数据不应该全部写回，应在修改后考虑写回，这里暂时全部写回
+    disk.seekp(OFFSET_DATA,ios::beg);
+    disk.write(reinterpret_cast<char*>(&data_[0]), sizeof(data_[0])*DATA_NUM);
+    
+    // 关闭文件
+    disk.close();
+}
+
 
 //分配一个inode,返回inode号（未实际分配空间）
-int create_inode(int size)
+int FileSystem::create_inode(int size)
 {
-    int ino=sblock.s_free[--sblock.s_nfree];//分配inode号
-    dInode[ino].d_nlink=1;//硬链接置为1
-    dInode[ino].d_size=size;//初始化大小
+    int ino=this->sblock.s_free[--sblock.s_nfree];//分配inode号
+    this->inodes[ino].i_nlink=1;//硬链接置为1
+    this->inodes[ino].i_size=size;//初始化大小
     return ino;
 }
 
 //分配 空闲块,返回块号（未实际分配空间）
-int alloc_data_block()
+int FileSystem::alloc_data_block()
 {
-    int blkno=sblock.s_inode[--sblock.s_ninode];
-    if(sblock.s_ninode<0){
+    int blkno=this->sblock.s_inode[--sblock.s_ninode];
+    if(this->sblock.s_ninode<0){
         cout<<"ERROR: sblock is empty!"<<"\n";
         return -1;
     }
@@ -40,29 +113,29 @@ int alloc_data_block()
 }
 
 //通过传入的文件数据fdata创建文件,在数据区分配空间并存储，返回 文件唯一的inode号
-int create_file(string& fdata)
+int FileSystem::create_file(string& fdata)
 {
     int data_p=0;//数据指针
     int addr_n=0;//dInode正使用的d_addr序号
 
     // 创建一个新的inode，记录文件长度 
     int ino=create_inode(fdata.length());
-    cout<<"filelen:"<<dInode[ino].d_size<<"\n";
+    cout<<"filelen:"<<inodes[ino].i_size<<"\n";
 
     //分配文件大小
-    while(data_p<dInode[ino].d_size){
+    while(data_p<inodes[ino].i_size){
         // 分配一个数据块
         int blkno=alloc_data_block();
         int copy_len=BLOCK_SIZE;
 
         // 复制长度为BLOCK_SIZE的数据到数据块中，不够则复制剩余长度
-        if(dInode[ino].d_size-data_p<BLOCK_SIZE){//剩余长度不足一个Block
-            copy_len=dInode[ino].d_size-data_p;
+        if(inodes[ino].i_size-data_p<BLOCK_SIZE){//剩余长度不足一个Block
+            copy_len=inodes[ino].i_size-data_p;
         }
         memcpy(data_+blkno*BLOCK_SIZE,fdata.c_str()+data_p,copy_len);
         cout<<"offset:"<<hex<<OFFSET_DATA+blkno*BLOCK_SIZE<<dec<<"\n";// 输出数据块的偏移量
 
-        dInode[ino].d_addr[addr_n++]=blkno;//在inode中记录数据块地址//TODO:目前全都是直接索引，没有一级和二级
+        inodes[ino].i_addr[addr_n++]=blkno;//在inode中记录数据块地址//TODO:目前全都是直接索引，没有一级和二级
 
         data_p+=copy_len;// 更新数据指针
     }
@@ -72,7 +145,7 @@ int create_file(string& fdata)
 
 
 //扫描源文件夹并在 文件系统中创建对应 普通文件与目录文件
-int FileSystem::initialize_filetree_from_externalFile(string path)
+int FileSystem::initialize_filetree_from_externalFile(const std::string &path)
 {
     // 打开目录
     int dir_file_ino = 0;
@@ -124,6 +197,8 @@ int FileSystem::initialize_filetree_from_externalFile(string path)
                 cout << "目录项内容: "<<"name:" << Name << " ino:" << ino << "加入到目录数据段中" << "\n";
                 dir_data << ino << setfill('\0') << setw(DirectoryEntry::DIR_SIZE) << Name << endl;
             }
+            else
+                cout<<"未成功获取"<<"\n";
         }
 
         cout << "构造目录文件:" << path <<"\n";
@@ -137,6 +212,3 @@ int FileSystem::initialize_filetree_from_externalFile(string path)
     // 返回目录文件的inode号
     return dir_file_ino;
 }
-
-
-

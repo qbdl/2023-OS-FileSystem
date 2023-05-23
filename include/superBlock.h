@@ -1,4 +1,7 @@
 //SuperBlock类（磁盘中的数据结构）:记录Inode个数，数据块个数等，用于资源分配与回收
+#ifndef SUPERBLOCK
+#define SUPERBLOCK
+
 class SuperBlock
 {
 public:
@@ -25,3 +28,5 @@ public:
 	int		padding[47];	//填充使SuperBlock块大小等于1024字节，占据2个扇区
 
 };
+
+#endif

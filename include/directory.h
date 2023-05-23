@@ -1,5 +1,7 @@
 //DirectEntry类：存储目录列表（Inode号与名称）
 //这里的注释可能不一定对，后续再修改——————————参考Inode.h : 对于一个 INODEFLAG 为 IDIRECTORY 的 Inode,其i_addr[0]所指向的即为一个Directory结构体
+
+#include<cstring>
 class DirectoryEntry
 {
 public:
