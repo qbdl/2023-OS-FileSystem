@@ -1,3 +1,5 @@
+#include"../include/fs.h"
+
 #include"../include/superBlock.h" //sblock
 #include"../include/diskInode.h" //DiskInode
 #include"../include/initDir.h"//初始化目录
@@ -70,7 +72,7 @@ int create_file(string& fdata)
 
 
 //扫描源文件夹并在 文件系统中创建对应 普通文件与目录文件
-int scan_path(string path)
+int FileSystem::initialize_filetree_from_externalFile(string path)
 {
     // 打开目录
     int dir_file_ino = 0;
@@ -101,7 +103,7 @@ int scan_path(string path)
                 if (S_ISDIR(buf.st_mode))
                 {
                     cout << "目录文件：" << Name << endl;
-                    ino = scan_path(path + '/' + Name);
+                    ino = initialize_filetree_from_externalFile(path + '/' + Name);
                 }
                 // 如果是普通文件
                 else if (S_ISREG(buf.st_mode))

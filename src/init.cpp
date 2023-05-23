@@ -1,4 +1,6 @@
 //初始化磁盘
+#include"../include/fs.h"
+
 #include "../include/superBlock.h"        // superblock相关
 #include "../include/diskInode.h"    // inode相关
 #include "../include/initDir.h"  // 初始化目录
@@ -19,12 +21,14 @@ char data_[DATA_SIZE];//数据区
 
 const int PAGE_SIZE = 4 * 1024; // mmap 限定4KB的倍数，这里取4 KB
 
+FileSystem fs;
+
 void init_superblock()
 {
     sblock.s_isize=INODE_NUM*INODE_SIZE/BLOCK_SIZE;//Inode区占用的盘块数  12.5~=12
     sblock.s_fsize=FILE_SIZE/BLOCK_SIZE;//盘块总数——Block总数
 
-    //初始化 Inode及栈
+    //初始化 superblock管理的 Inode及栈//TODO:注释重新修改（把内容放进readme里）
     sblock.s_ninode=INODE_NUM;
     for(int i=0; i<INODE_NUM; i++){
         sblock.s_inode[i]=i;//固定后不变的，仅是移动指针（栈顶）
@@ -135,8 +139,9 @@ int main(int argc, char *argv[])
     // 初始化superblock
     init_superblock();
 
-    //开始扫描文件 并创建对应普通文件与目录文件
-    scan_path("my_test");
+    // //开始扫描文件 并创建对应普通文件与目录文件
+    fs.initialize_filetree_from_externalFile("my_test");
+    // scan_path("my_test");
 
     int size = 0;
     //初次拷贝，superblock, inode ,部分data

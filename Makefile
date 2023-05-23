@@ -4,7 +4,8 @@ CFLAGS=-c -std=c++11
 TARGET=init #生成文件
 
 #源文件和对象文件
-SRCS=src/init.cpp src/initDir.cpp
+SRCS=$(wildcard src/*.cpp)
+# SRCS=src/init.cpp src/initDir.cpp
 OBJS=$(SRCS:.cpp=.o)
 
 #依赖文件
