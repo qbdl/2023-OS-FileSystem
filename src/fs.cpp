@@ -3,6 +3,8 @@
 #include"../include/Inode.h" //DiskInode&Inode
 #include"../include/parameter.h"//文件系统通用参数
 #include"../include/directory.h"
+#include <chrono>
+#include <ctime>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -91,26 +93,66 @@ FileSystem::~FileSystem()
     disk.close();
 }
 
-
-//分配一个inode,返回inode号（未实际分配空间）
-int FileSystem::create_inode(int size)
+time_t get_cur_time() 
 {
-    int ino=this->sblock.s_free[--sblock.s_nfree];//分配inode号
-    this->inodes[ino].i_nlink=1;//硬链接置为1
-    this->inodes[ino].i_size=size;//初始化大小
+    return chrono::system_clock::to_time_t(chrono::system_clock::now());
+}
+
+//分配一个空闲inode，并初步初始化
+int FileSystem::alloc_inode() 
+{
+    if(sblock.s_ninode <= 1)
+        return 0;
+    int ino = sblock.s_inode[--sblock.s_ninode];//栈 逆序分配
+    inodes[ino].i_nlink = 1;
+    inodes[ino].i_uid = user->uid;
+    inodes[ino].i_gid = user->group;
+    inodes[ino].i_atime = inodes[ino].i_mtime = get_cur_time();
+
     return ino;
 }
 
 //分配 空闲块,返回块号（未实际分配空间）
-int FileSystem::alloc_data_block()
+int FileSystem::alloc_block()
 {
-    int blkno=this->sblock.s_inode[--sblock.s_ninode];
-    if(this->sblock.s_ninode<0){
-        cout<<"ERROR: sblock is empty!"<<"\n";
-        return -1;
+    /* 当前s_free的空闲块数不足（当前的100块用完） */
+    int blkno;
+    if(sblock.s_nfree <= 1){
+        //换下一个新表（101个元素，第一个是长度，后续是内容）
+        char buf[BLOCK_SIZE]="";//这里其实不用取这么大空间
+        read_block(sblock.s_free[0],buf);//s_free[0]指向下一块表的位置（init时候决定）
+        int *table=(int *)buf;
+        sblock.s_nfree=table[0];
+        for(int i=0;i<sblock.s_nfree;i++)
+            sblock.s_free[i] = table[i+1];
+    }
+
+    /* 取一个块 */
+    blkno=sblock.s_free[--sblock.s_nfree];
+    if (blkno == 0) {
+        cerr << "error : block list empty" << "\n";
+        return FAIL;
     }
     return blkno;
 }
+
+//blkno块=>buf
+bool FileSystem::read_block(int blkno, char* buf) 
+{
+    // 暂未实现缓存
+    disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, std::ios::beg);
+    disk.read(buf, BLOCK_SIZE);
+    return true;
+}
+
+//buf=>blkno块
+bool FileSystem::write_block(int blkno, char* buf) 
+{
+    disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, std::ios::beg);
+    disk.write(buf, BLOCK_SIZE);
+    return true;
+}
+
 
 //通过传入的文件数据fdata创建文件,在数据区分配空间并存储，返回 文件唯一的inode号
 int FileSystem::create_file(string& fdata)
@@ -119,13 +161,13 @@ int FileSystem::create_file(string& fdata)
     int addr_n=0;//dInode正使用的d_addr序号
 
     // 创建一个新的inode，记录文件长度 
-    int ino=create_inode(fdata.length());
+    int ino=alloc_inode(fdata.length());
     cout<<"filelen:"<<inodes[ino].i_size<<"\n";
 
     //分配文件大小
     while(data_p<inodes[ino].i_size){
         // 分配一个数据块
-        int blkno=alloc_data_block();
+        int blkno=alloc_block();
         int copy_len=BLOCK_SIZE;
 
         // 复制长度为BLOCK_SIZE的数据到数据块中，不够则复制剩余长度

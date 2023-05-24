@@ -13,4 +13,6 @@ const long OFFSET_DATA = OFFSET_INODE+INODE_NUM*INODE_SIZE;//数据区的起始�
 const long DATA_SIZE = FILE_SIZE-OFFSET_DATA;//数据区长度
 const long DATA_NUM = DATA_SIZE/BLOCK_SIZE;//数据区 文件的块个数
 
+#define FAIL -1
+
 #endif

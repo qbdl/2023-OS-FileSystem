@@ -44,8 +44,8 @@ void init_superblock()
 
     //填写后续的空闲表——从后往前逆序分配剩余数据区（除了sblock管理的100个数据块以外的）
     //剩余数据块的组织方式 0：长度 1-101 具体内容
-    //1-100 具体内容 101 指向下一块表
-    int blkno=sblock.s_free[0];//superblock里管理的最后一块表（每块表索引从100到0），sblock.s_free[0]指向没有superblock管理的第一个数据区（第一个刚好是长度）
+    //2-101 具体内容 1 指向下一块表
+    int blkno=sblock.s_free[0];//superblock当前管理的最后一块表（每块表索引从100到0），sblock.s_free[0]指向下一组100个的数据区（第一个刚好是长度）
     while(data_i<DATA_NUM)
     {
         char *p=data_+blkno*BLOCK_SIZE;//定位到

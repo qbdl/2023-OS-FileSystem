@@ -12,7 +12,7 @@ public:
 	int		s_isize;		//外存Inode区占用的盘块数
 	int		s_fsize;		//盘块总数——Block总数
 	
-	int		s_nfree;		//Free 数据块总数
+	int		s_nfree;		//当前 s_free 直接管理的数据块里 总空闲块数
 	int		s_free[100];	//Free 数据块栈——直接管理的空闲盘块索引表
 	
 	int		s_ninode;		//栈中空闲 Inode数————栈顶指针
