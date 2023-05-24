@@ -152,51 +152,31 @@ bool FileSystem::write_block(int blkno, char* buf)
     return true;
 }
 
-
-//通过传入的文件数据fdata创建文件,在数据区分配空间并存储，返回 文件唯一的inode号
-int FileSystem::create_file(string& fdata)
+//外部文件写入磁盘中
+bool FileSystem::saveFile(const std::string& src, const std::string& filename) 
 {
-    int data_p=0;//数据指针
-    int addr_n=0;//dInode正使用的d_addr序号
+    //创建新文件
 
-    // 创建一个新的inode，记录文件长度 
-    int ino=alloc_inode(fdata.length());
-    cout<<"filelen:"<<inodes[ino].i_size<<"\n";
+    //读取源文件
 
-    //分配文件大小
-    while(data_p<inodes[ino].i_size){
-        // 分配一个数据块
-        int blkno=alloc_block();
-        int copy_len=BLOCK_SIZE;
+    //写入inode信息
 
-        // 复制长度为BLOCK_SIZE的数据到数据块中，不够则复制剩余长度
-        if(inodes[ino].i_size-data_p<BLOCK_SIZE){//剩余长度不足一个Block
-            copy_len=inodes[ino].i_size-data_p;
-        }
-        memcpy(data_+blkno*BLOCK_SIZE,fdata.c_str()+data_p,copy_len);
-        cout<<"offset:"<<hex<<OFFSET_DATA+blkno*BLOCK_SIZE<<dec<<"\n";// 输出数据块的偏移量
-
-        inodes[ino].i_addr[addr_n++]=blkno;//在inode中记录数据块地址//TODO:目前全都是直接索引，没有一级和二级
-
-        data_p+=copy_len;// 更新数据指针
-    }
-
-    return ino;//返回inode号
 }
 
-
 //扫描源文件夹并在 文件系统中创建对应 普通文件与目录文件
-int FileSystem::initialize_filetree_from_externalFile(const std::string &path)
+bool FileSystem::initialize_filetree_from_externalFile(const std::string &path, const int root_no)
 {
+    //根目录初始化
+    if(inodes[ROOT_INO].i_size == 0)
+        inodes[ROOT_INO].init_as_dir(ROOT_INO, ROOT_INO);
+    
+
     // 打开目录
-    int dir_file_ino = 0;
     DIR *pDIR = opendir((path + '/').c_str());
     dirent *pdirent = NULL;
     if (pDIR != NULL)// 如果目录打开成功
     {
-        ostringstream dir_data;
-        cout << "在目录" << path << "下：" << endl;
-
+        cout << "under" << path << ":" << endl;
         // 循环读取目录
         while ((pdirent = readdir(pDIR)) != NULL)
         {
@@ -216,40 +196,32 @@ int FileSystem::initialize_filetree_from_externalFile(const std::string &path)
                 // 如果是目录文件
                 if (S_ISDIR(buf.st_mode))
                 {
-                    cout << "目录文件：" << Name << endl;
-                    ino = initialize_filetree_from_externalFile(path + '/' + Name);
-                }
+                    ino = inodes[root_no].create_file(Name, true);
+                    cout << "make folder: " << Name << " success! inode:" << ino << endl;
+                    
+                    //递归进入
+                    user_->current_dir_ino = ino;
+                    if(initialize_from_external_directory(path + '/' + Name, ino) == false)
+                        return false;
+                    user_->current_dir_ino = root_no;
+                }                
                 // 如果是普通文件
                 else if (S_ISREG(buf.st_mode))
                 {
-                    // 读取文件内容
-                    ifstream tmp;
-                    ostringstream tmpdata;
-                    tmp.open(path + '/' + Name);
-                    tmpdata << tmp.rdbuf(); // 数据流导入进file_data
-                    string tmp_data_string = tmpdata.str();
+                    cout << "normal file:" << Name << "\n";
+                    if(saveFile(path + '/' + Name, Name) == false)
+                        return false;
 
-                    // 创建文件
-                    ino = create_file(tmp_data_string);
-                    tmp.close();
+                    cout << "make file: " << Name << " success!"<<"\n";
                 }
-
-                // 输出文件名和inode号，并将其加入到目录数据段中
-                cout << "目录项内容: "<<"name:" << Name << " ino:" << ino << "加入到目录数据段中" << "\n";
-                dir_data << ino << setfill('\0') << setw(DirectoryEntry::DIR_SIZE) << Name << endl;
             }
-            else
-                cout<<"未成功获取"<<"\n";
+            else{
+                cout << "other file" << Name <<"\n";
+            }
         }
-
-        cout << "构造目录文件:" << path <<"\n";
-        string dir_data_string = dir_data.str();
-        dir_file_ino = create_file(dir_data_string);
-        cout << "构造目录inode成功,inode:" << dir_file_ino << "\n";
     }
-
     // 关闭目录
     closedir(pDIR);
     // 返回目录文件的inode号
-    return dir_file_ino;
+    return true;
 }

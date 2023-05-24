@@ -135,6 +135,12 @@ int Inode::read_at(int offset, char *buf, int size)
     return read_size;
 }
 
+//buf=>文件内offset~offset+size
+int Inode::write_at(int offset, const char* buf, int size)
+{
+    
+}
+
 //inode级 分配block(调用fs的分配block)
 int Inode::push_back_block()
 {

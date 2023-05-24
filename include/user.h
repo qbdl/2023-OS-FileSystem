@@ -11,6 +11,8 @@ public:
 
     int uid;//uesr id
     int gid;//group id
+
+    int current_dir_ino;//当前路径文件的inode号
 };
 
 #endif

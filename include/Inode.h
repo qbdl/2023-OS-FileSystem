@@ -75,7 +75,8 @@ public:
 	std::vector<DirectoryEntry> get_entry();//获取当前文件(目录文件)的所有目录项
 
 	int read_at(int offset, char *buf, int size);//文件内offset~offset+size=>buf
-
+	int write_at(int offset, const char* buf, int size);//buf=>文件内offset~offset+size
+	
 	int push_back_block();//inode级 分配block(调用fs的分配block)
 
 	int get_block_id(int inner_id);//文件内blockno=>磁盘blockno
