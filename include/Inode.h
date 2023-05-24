@@ -3,6 +3,7 @@
 #define DISKINODE
 
 #include "../include/directory.h"
+#include"../include/parameter.h"
 #include<string>
 #include<vector>
 

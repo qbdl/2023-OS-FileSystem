@@ -1,8 +1,4 @@
 #include"../include/fs.h"
-#include"../include/superBlock.h" //sblock
-#include"../include/Inode.h" //DiskInode&Inode
-#include"../include/parameter.h"//文件系统通用参数
-#include"../include/directory.h"
 #include <chrono>
 #include <ctime>
 #include <iostream>
@@ -20,7 +16,7 @@ using namespace std;
 
 //初始化 读磁盘进内存变量
 //用fstream映射整个磁盘文件 进行操作
-FileSystem::FileSystem(std::string disk_path)
+FileSystem::FileSystem(string disk_path)
 {
     /*init.cpp怎么写进去，这里就怎么读出来*/
     fstream temp_disk(disk_path,ios::in|ios::out|ios::binary);
@@ -58,7 +54,7 @@ FileSystem::FileSystem(std::string disk_path)
 
     //返回disk与disk_path
     this->disk_path=disk_path;
-    this->disk=std::move(temp_disk);
+    this->disk=move(temp_disk);
 }
 
 //fstream的内容 写回磁盘文件
@@ -139,7 +135,7 @@ int FileSystem::alloc_block()
 //blkno块=>buf
 bool FileSystem::read_block(int blkno, char* buf) 
 {
-    disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, std::ios::beg);
+    disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, ios::beg);
     disk.read(buf, BLOCK_SIZE);
     return true;
 }
@@ -147,24 +143,114 @@ bool FileSystem::read_block(int blkno, char* buf)
 //buf=>blkno块
 bool FileSystem::write_block(int blkno, char* buf) 
 {
-    disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, std::ios::beg);
+    disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, ios::beg);
     disk.write(buf, BLOCK_SIZE);
     return true;
 }
 
-//外部文件写入磁盘中
-bool FileSystem::saveFile(const std::string& src, const std::string& filename) 
+//文件树 path =>inode号
+int FileSystem::find_from_path(const string& path)
 {
-    //创建新文件
+    int ino;    // 起始查询的目录INode号
+    if(path.empty()){
+        cerr << "error path!" << "\n";
+        return FAIL;
+    }
+    else {      // 判断是相对路径还是绝对路径
+        if(path[0] == '/')
+            ino = ROOT_INO;         
+        else
+            ino = user->current_dir_ino;
+    }
+
+    // 解析Path
+    vector<string> tokens;
+    istringstream iss(path);
+    string token;
+    while (getline(iss, token, '/')) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    // 依次查找每一级目录或文件
+    for (const auto& token : tokens) {
+        auto entrys = inodes[ino].get_entry();
+        bool found = false;
+        // 遍历所有目录项
+        for (auto& entry : entrys) {
+            if (entry.m_ino && strcmp(entry.m_name, token.c_str()) == 0) {
+                ino = entry.m_ino;
+                found = true;
+                break;
+            }
+        }
+        if (!found) return FAIL;
+    }
+
+    return ino;    
+}
+
+//外部文件写入磁盘中
+bool FileSystem::saveFile(const string& src, const string& filename) 
+{
+    // 确定目标目录inode号
+
+    // 在目标目录下 inode层级 创建新文件
 
     //读取源文件
 
     //写入inode信息
 
+    int dir_ino;
+    if(filename.rfind('/') == -1)
+        dir_ino = user->current_dir_ino;
+    else {
+        dir_ino = find_from_path(filename.substr(0, filename.rfind('/')));
+        if (dir_ino == FAIL) {
+            cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
+            return false;
+        }
+    }
+
+
+    string name = filename.substr(filename.rfind('/') + 1);
+    int ino = inodes[dir_ino].create_file(name, false);
+    if (ino == FAIL) {
+        cerr << "Failed to create file: " << filename << "\n";
+        return false;
+    }
+
+
+    Inode& inode = inodes[ino];
+    ifstream infile(src, ios::binary | ios::in);
+    if (!infile) {
+        cerr << "Failed to open file: " << src << "\n";
+        return false;
+    }
+    infile.seekg(0, ios::end);
+    size_t size = infile.tellg();
+    infile.seekg(0, ios::beg);
+    vector<char> data(size);
+    infile.read(data.data(), size);
+
+
+    if (!inode.write_at(0, data.data(), size)) {
+        cerr << "Failed to write data to inode" << "\n";
+        return false;
+    }
+    inode.i_size = size;
+    inode.i_mtime = get_cur_time();
+    inode.i_atime = get_cur_time();
+    inode.i_nlink = 1;
+
+    infile.close();
+
+    return true;
 }
 
 //扫描源文件夹并在 文件系统中创建对应 普通文件与目录文件
-bool FileSystem::initialize_filetree_from_externalFile(const std::string &path, const int root_no)
+bool FileSystem::initialize_filetree_from_externalFile(const string &path, const int root_no)
 {
     //根目录初始化
     if(inodes[ROOT_INO].i_size == 0)
@@ -176,7 +262,7 @@ bool FileSystem::initialize_filetree_from_externalFile(const std::string &path, 
     dirent *pdirent = NULL;
     if (pDIR != NULL)// 如果目录打开成功
     {
-        cout << "under" << path << ":" << endl;
+        cout << "under" << path << ":" << "\n";
         // 循环读取目录
         while ((pdirent = readdir(pDIR)) != NULL)
         {
@@ -197,13 +283,13 @@ bool FileSystem::initialize_filetree_from_externalFile(const std::string &path, 
                 if (S_ISDIR(buf.st_mode))
                 {
                     ino = inodes[root_no].create_file(Name, true);
-                    cout << "make folder: " << Name << " success! inode:" << ino << endl;
+                    cout << "make folder: " << Name << " success! inode:" << ino << "\n";
                     
                     //递归进入
-                    user_->current_dir_ino = ino;
-                    if(initialize_from_external_directory(path + '/' + Name, ino) == false)
+                    user->current_dir_ino = ino;
+                    if(initialize_filetree_from_externalFile(path + '/' + Name, ino) == false)
                         return false;
-                    user_->current_dir_ino = root_no;
+                    user->current_dir_ino = root_no;
                 }                
                 // 如果是普通文件
                 else if (S_ISREG(buf.st_mode))

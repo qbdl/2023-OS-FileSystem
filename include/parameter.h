@@ -12,6 +12,9 @@ const long OFFSET_INODE = 2*BLOCK_SIZE;//Inode区的起始位置（前两个Bloc
 const long OFFSET_DATA = OFFSET_INODE+INODE_NUM*INODE_SIZE;//数据区的起始位置
 const long DATA_SIZE = FILE_SIZE-OFFSET_DATA;//数据区长度
 const long DATA_NUM = DATA_SIZE/BLOCK_SIZE;//数据区 文件的块个数
+const long ENTRY_SIZE=32;
+const long ENTRYS_PER_BLOCK = BLOCK_SIZE/ENTRY_SIZE;
+
 
 const long ROOT_INO = 1;  // 根目录的inode号
 

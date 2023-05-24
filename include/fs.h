@@ -12,12 +12,16 @@
 class FileSystem
 {
 public:
+    friend class Inode;
+
     FileSystem(std::string disk_path);
     ~FileSystem();
 
 public:
     /* 初始化 接口 */
     bool initialize_filetree_from_externalFile(const std::string &path, const int root_no);
+    /* 外部 接口*/
+    void set_u(User *u) {user = u;};
 public:
     /* 分配 接口*/
     int alloc_inode();//分配一个空闲inode，并初步初始化
@@ -28,6 +32,7 @@ public:
     bool write_block(int blkno, char* buf);//写入一个物理块(全覆盖)
 
     bool saveFile(const std::string& src, const std::string& filename);//外部文件写入磁盘中
+    int find_from_path(const std::string& path);//文件树 path =>inode号
 
 private:
     User *user;//每个fs对应一个user
