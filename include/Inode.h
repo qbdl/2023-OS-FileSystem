@@ -76,7 +76,7 @@ public:
 
 	int read_at(int offset, char *buf, int size);//文件内offset~offset+size=>buf
 
-	int push_back_block();//调用block分配
+	int push_back_block();//inode级 分配block(调用fs的分配block)
 
 	int get_block_id(int inner_id);//文件内blockno=>磁盘blockno
 

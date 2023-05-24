@@ -112,7 +112,7 @@ int FileSystem::alloc_inode()
     return ino;
 }
 
-//分配 空闲块,返回块号（未实际分配空间）
+//分配一个空闲块,返回块号
 int FileSystem::alloc_block()
 {
     /* 当前s_free的空闲块数不足（当前的100块用完） */
@@ -139,7 +139,6 @@ int FileSystem::alloc_block()
 //blkno块=>buf
 bool FileSystem::read_block(int blkno, char* buf) 
 {
-    // 暂未实现缓存
     disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, std::ios::beg);
     disk.read(buf, BLOCK_SIZE);
     return true;
