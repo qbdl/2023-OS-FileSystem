@@ -5,7 +5,7 @@
 class DirectoryEntry
 {
 public:
-    static const int DIR_SIZE=28;//文件名最大长度
+    static const int DIR_SIZE=24;//文件名最大长度
 
     enum class FileType 
     {

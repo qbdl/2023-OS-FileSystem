@@ -46,7 +46,6 @@ public:
     ~Inode(){};
 
 public:
-
 	/*Inode 特有*/
 	int		i_ino;			//inode在内存inode数组中的下标
 	int		i_lock;			//该内存inode的锁
@@ -63,6 +62,22 @@ public:
 	                        // 文件逻辑块号=>物理块号转换
 	int		i_atime;		//最后访问时间
 	int		i_mtime;		//最后修改时间
+
+public:
+	/* 外部接口 */
+	int create_file(const std::string&fileName,bool is_dir);
+
+	/* 内部实现 */
+	std::vector<DirectoryEntry> get_entry();//获取当前文件(目录文件)的所有目录项
+
+	int read_at(int offset, char *buf, int size);//文件内offset~offset+size=>buf
+
+	int push_back_block();//调用block分配
+
+	int get_block_id(int inner_id);//文件内blockno=>磁盘blockno
+
+	int init_as_dir(int ino, int fa_ino);//在目录文件中加.与..的目录项
+
 };
 
 #endif
