@@ -106,7 +106,7 @@ int FileSystem::alloc_inode()
     int ino = sblock.s_inode[--sblock.s_ninode];//栈 逆序分配
     inodes[ino].i_nlink = 1;
     inodes[ino].i_uid = user->uid;
-    inodes[ino].i_gid = user->group;
+    inodes[ino].i_gid = user->gid;
     inodes[ino].i_atime = inodes[ino].i_mtime = get_cur_time();
 
     return ino;

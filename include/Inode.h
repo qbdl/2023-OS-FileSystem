@@ -2,6 +2,10 @@
 #ifndef DISKINODE
 #define DISKINODE
 
+#include "../include/directory.h"
+#include<string>
+#include<vector>
+
 class DiskInode
 {
 public:
