@@ -15,7 +15,6 @@ int main()
     fs.set_u(&user);
 
     //将初始化文件树的部分在这里完成而非init.cpp（读初始的磁盘文件到内存变量+读用户文件到磁盘文件myDisk.img&内存变量）
-
     // 开始扫描文件 并创建对应普通文件与目录文件
     if(!fs.initialize_filetree_from_externalFile("my_test",user.current_dir_ino)) {
         cout << "Initialize failed!" <<"\n";

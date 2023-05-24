@@ -78,6 +78,8 @@ public:
 	int read_at(int offset, char *buf, int size);//文件内offset~offset+size=>buf
 	int write_at(int offset, const char* buf, int size);//buf=>文件内offset~offset+size
 	
+	int resize_file(int size);//resize file大小
+
 	int push_back_block();//inode级 分配block(调用fs的分配block)
 
 	int get_block_id(int inner_id);//文件内blockno=>磁盘blockno

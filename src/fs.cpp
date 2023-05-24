@@ -62,7 +62,7 @@ FileSystem::~FileSystem()
 {
     // superblock
     disk.seekp(0, ios::beg);
-    disk.write(reinterpret_cast<char*>(&sblock), sizeof(SuperBlock));
+    disk.write((char*)(&sblock), sizeof(SuperBlock));
 
     //Inode
     disk.seekp(OFFSET_INODE, ios::beg);
@@ -78,12 +78,11 @@ FileSystem::~FileSystem()
         for (int j = 0; j < 10; j++)
             dinodes[i].d_addr[j] = inodes[i].i_addr[j];
     }
-    disk.write(reinterpret_cast<char*>(&dinodes[0]), sizeof(DiskInode)*INODE_NUM);
+    disk.write((char*)(&dinodes[0]), sizeof(DiskInode)*INODE_NUM);
 
     //data
-    //真正的文件数据不应该全部写回，应在修改后考虑写回，这里暂时全部写回
-    disk.seekp(OFFSET_DATA,ios::beg);
-    disk.write(reinterpret_cast<char*>(&data_[0]), sizeof(data_[0])*DATA_NUM);
+    //真正的文件数据不应该全部写回，应在修改后考虑写回，这里不进行写回
+
     
     // 关闭文件
     disk.close();
@@ -117,7 +116,7 @@ int FileSystem::alloc_block()
         //换下一个新表（101个元素，第一个是长度，后续是内容）
         char buf[BLOCK_SIZE]="";//这里其实不用取这么大空间
         read_block(sblock.s_free[0],buf);//s_free[0]指向下一块表的位置（init时候决定）
-        int *table=(int *)buf;
+        int *table=(int*)buf;
         sblock.s_nfree=table[0];
         for(int i=0;i<sblock.s_nfree;i++)
             sblock.s_free[i] = table[i+1];
@@ -135,6 +134,10 @@ int FileSystem::alloc_block()
 //blkno块=>buf
 bool FileSystem::read_block(int blkno, char* buf) 
 {
+    // std::cout<<OFFSET_DATA + blkno*BLOCK_SIZE<<"\n";
+    // disk.seekg(0, ios::end);
+    // std::cout<<disk.tellg()<<"\n";
+
     disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, ios::beg);
     disk.read(buf, BLOCK_SIZE);
     return true;
@@ -145,6 +148,7 @@ bool FileSystem::write_block(int blkno, char* buf)
 {
     disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, ios::beg);
     disk.write(buf, BLOCK_SIZE);
+    // std::cout<<"write_block buf content:\n"<<buf<<"\n";
     return true;
 }
 
@@ -233,6 +237,7 @@ bool FileSystem::saveFile(const string& src, const string& filename)
     infile.seekg(0, ios::beg);
     vector<char> data(size);
     infile.read(data.data(), size);
+    // cout<<"saveFile data content:\n"<<data.data()<<"\n";
 
 
     if (!inode.write_at(0, data.data(), size)) {
@@ -262,7 +267,7 @@ bool FileSystem::initialize_filetree_from_externalFile(const string &path, const
     dirent *pdirent = NULL;
     if (pDIR != NULL)// 如果目录打开成功
     {
-        cout << "under" << path << ":" << "\n";
+        cout << "under " << path << ":" << "\n";
         // 循环读取目录
         while ((pdirent = readdir(pDIR)) != NULL)
         {

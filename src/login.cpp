@@ -54,7 +54,7 @@ User verify(string username,string password)
 //外部接口
 User login()
 {
-    // return verify("alice","123");
+    return verify("alice","123");
 
     string username, password;
 

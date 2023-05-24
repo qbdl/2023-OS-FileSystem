@@ -7,6 +7,7 @@ using namespace std;
 
 
 extern FileSystem fs;
+extern time_t get_cur_time();
 
 const int DIRECT_COUNT=6;
 const int FIRST_LEVEL_COUNT=128;//一个块512字节，一个指针4字节，那么一个块可以包含128个指针
@@ -53,8 +54,8 @@ int Inode::create_file(const string& fileName, bool is_dir)
 
 
     int blknum = entrynum / ENTRYS_PER_BLOCK;
-    char*new_entry_block;
-    fs.read_block(get_block_id(blknum),new_entry_block);
+    char new_entry_block[BLOCK_SIZE];
+    fs.read_block(get_block_id(blknum),(char*)new_entry_block);
     DirectoryEntry* new_entry_block_=(DirectoryEntry*)new_entry_block;
 
     DirectoryEntry new_entry(ino,fileName.c_str(),is_dir? DirectoryEntry::FileType::Directory : DirectoryEntry::FileType::RegularFile);
@@ -90,9 +91,10 @@ int Inode::init_as_dir(int ino, int fa_ino)
     }
 
     /* 读取block 加.与..的目录项*/
-    char *inner_buf;
-    fs.read_block(sub_dir_blk,inner_buf);
-    memset(inner_buf,0,BLOCK_SIZE);
+    char inner_buf[BLOCK_SIZE];//需要分配指定空间，否则会报段错误！！
+    fs.read_block(sub_dir_blk,(char*)inner_buf);
+
+    /* 修改 ,写回 */
     DirectoryEntry *sub_entrys=(DirectoryEntry *)inner_buf;
 
     DirectoryEntry dot_entry(ino, 
@@ -119,7 +121,7 @@ int Inode::read_at(int offset, char *buf, int size)
     if(offset+size>i_size)
         size=i_size-offset;
     
-    int reai_size=0;
+    int read_size=0;
 
     for(int pos=offset;pos<offset+size;){
         int no=pos/BLOCK_SIZE; //文件内块编号
@@ -130,22 +132,78 @@ int Inode::read_at(int offset, char *buf, int size)
             break;
 
         /* 从全局读块 进buf */
-        char *inner_buf;
-        fs.read_block(blkno,inner_buf);
+        char inner_buf[BLOCK_SIZE];
+        fs.read_block(blkno,(char*)inner_buf);
 
-        int block_reai_size=min<int>(BLOCK_SIZE - block_offset, size - reai_size);//block剩余 or size剩余
-        memcpy(buf+reai_size,inner_buf+block_offset,block_reai_size);
-        reai_size+=block_reai_size;
-        pos+=block_reai_size;
+        int block_read_size=min<int>(BLOCK_SIZE - block_offset, size - read_size);//block剩余 or size剩余
+        memcpy(buf+read_size,inner_buf+block_offset,block_read_size);
+        read_size+=block_read_size;
+        pos+=block_read_size;
     }
 
-    return reai_size;
+    i_atime = get_cur_time();
+
+    return read_size;
 }
+
+//resize file大小
+int Inode::resize_file(int size)
+{
+    if(size<=i_size){//TODO:收缩
+        return 0;
+    }
+
+    int append_block_num=(size + BLOCK_SIZE - 1) / BLOCK_SIZE - (i_size + BLOCK_SIZE - 1) / BLOCK_SIZE;//利用+ BLOCK_SIZE - 1进行向上取整
+    while(append_block_num--) {
+        if (push_back_block() == FAIL) {
+            return FAIL;
+        }
+    }
+
+    return 0;
+}
+
 
 //buf=>文件内offset~offset+size
 int Inode::write_at(int offset, const char* buf, int size)
 {
+    if (offset + size > i_size)//TODO:缩小
+        resize_file(offset + size);
     
+    int written_size = 0;
+
+    for (int pos = offset; pos < offset + size;) {
+        int no = pos / BLOCK_SIZE;             //计算inode中的块编号
+        int block_offset = pos % BLOCK_SIZE;   //块内偏移
+        int blkno = get_block_id(no);
+
+        if (blkno==FAIL){
+            cerr<<"block 不足"<<"\n";
+            return written_size;
+        }
+
+        int block_write_size = min<int>(BLOCK_SIZE - block_offset, size - written_size);
+        char inner_buf[BLOCK_SIZE];
+
+        //不是全写的——需要读，修改部分后写回
+        if(block_offset!=0 || block_write_size < BLOCK_SIZE)
+            fs.read_block(blkno, (char*)inner_buf);
+
+        //写
+        memcpy(inner_buf + block_offset, buf + written_size, block_write_size);
+        fs.write_block(blkno, inner_buf);
+
+        written_size += block_write_size;
+        pos += block_write_size;
+    }
+
+    // 更新inode的文件大小和最后修改时间
+    if (offset + written_size > i_size) {
+        i_size = offset + written_size;
+    }
+    i_mtime = i_atime = get_cur_time();
+
+    return written_size;
 }
 
 //inode级 分配block(调用fs的分配block)
