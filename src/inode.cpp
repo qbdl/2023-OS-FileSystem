@@ -1,4 +1,5 @@
 #include"../include/Inode.h"
+#include"../include/BlockCache.h"
 #include "../include/directory.h"
 #include"../include/fs.h"
 #include<iostream>
@@ -54,14 +55,22 @@ int Inode::create_file(const string& fileName, bool is_dir)
 
 
     int blknum = entrynum / ENTRYS_PER_BLOCK;
-    char new_entry_block[BLOCK_SIZE];
-    fs.read_block(get_block_id(blknum),(char*)new_entry_block);
-    DirectoryEntry* new_entry_block_=(DirectoryEntry*)new_entry_block;
+    
+    //使用缓存
+    auto cache_blk = fs.block_cache_mgr_.get_block_cache(get_block_id(blknum));
+    auto new_entry_block_ = (DirectoryEntry *)cache_blk->data();
+    cache_blk->modified_ = true;
+    
+    //不使用缓存
+    // char new_entry_block[BLOCK_SIZE];
+    // fs.read_block(get_block_id(blknum),(char*)new_entry_block);
+    // DirectoryEntry* new_entry_block_=(DirectoryEntry*)new_entry_block;
 
     DirectoryEntry new_entry(ino,fileName.c_str(),is_dir? DirectoryEntry::FileType::Directory : DirectoryEntry::FileType::RegularFile);
     new_entry_block_[entrynum % ENTRYS_PER_BLOCK]=new_entry;
 
-    fs.write_block(get_block_id(blknum), (char*)new_entry_block_);
+    // fs.write_block(get_block_id(blknum), (char*)new_entry_block_);
+
 
     i_size+=ENTRY_SIZE;
 
@@ -93,13 +102,31 @@ int Inode::init_as_dir(int ino, int fa_ino)
         return -1;
     }
 
+    /* 不使用缓存 */
+
     /* 读取block 加.与..的目录项*/
-    char inner_buf[BLOCK_SIZE];//需要分配指定空间，否则会报段错误！！
-    fs.read_block(sub_dir_blk,(char*)inner_buf);
+    // char inner_buf[BLOCK_SIZE];//需要分配指定空间，否则会报段错误！！
+    // fs.read_block(sub_dir_blk,(char*)inner_buf);
 
-    /* 修改 ,写回 */
-    DirectoryEntry *sub_entrys=(DirectoryEntry *)inner_buf;
+    // /* 修改 ,写回 */
+    // DirectoryEntry *sub_entrys=(DirectoryEntry *)inner_buf;
 
+    // DirectoryEntry dot_entry(ino, 
+    //                     ".", 
+    //                     DirectoryEntry::FileType::Directory);
+    // DirectoryEntry dotdot_entry(fa_ino, 
+    //                             "..", 
+    //                             DirectoryEntry::FileType::Directory);
+    // sub_entrys[0] = dot_entry;
+    // sub_entrys[1] = dotdot_entry;
+    // i_size += ENTRY_SIZE*2;
+
+    // fs.write_block(sub_dir_blk, inner_buf);
+
+    /* 使用缓存 */
+    auto cache_blk = fs.block_cache_mgr_.get_block_cache(sub_dir_blk);
+    auto sub_entrys = (DirectoryEntry *)cache_blk->data();
+    cache_blk->modified_ = true;
     DirectoryEntry dot_entry(ino, 
                         ".", 
                         DirectoryEntry::FileType::Directory);
@@ -108,9 +135,7 @@ int Inode::init_as_dir(int ino, int fa_ino)
                                 DirectoryEntry::FileType::Directory);
     sub_entrys[0] = dot_entry;
     sub_entrys[1] = dotdot_entry;
-    i_size += ENTRY_SIZE*2;
-
-    fs.write_block(sub_dir_blk, inner_buf);
+    i_size += ENTRY_SIZE*2;    
 
     return 0;
 }
@@ -135,8 +160,16 @@ int Inode::read_at(int offset, char *buf, int size)
             break;
 
         /* 从全局读块 进buf */
-        char inner_buf[BLOCK_SIZE];
-        fs.read_block(blkno,(char*)inner_buf);
+
+        /* 不使用缓存 */
+        // char inner_buf[BLOCK_SIZE];
+        // fs.read_block(blkno,(char*)inner_buf);
+
+        /* 使用缓存 */
+        char *inner_buf = fs.block_cache_mgr_
+                      .get_block_cache(blkno)
+                      ->data();
+        //
 
         int block_read_size=min<int>(BLOCK_SIZE - block_offset, size - read_size);//block剩余 or size剩余
         memcpy(buf+read_size,inner_buf+block_offset,block_read_size);
@@ -186,15 +219,24 @@ int Inode::write_at(int offset, const char* buf, int size)
         }
 
         int block_write_size = min<int>(BLOCK_SIZE - block_offset, size - written_size);
-        char inner_buf[BLOCK_SIZE];
+        
+        /* 不使用缓存 */
+        // char inner_buf[BLOCK_SIZE];
+        // //不是全写的——需要读，修改部分后写回
+        // if(block_offset!=0 || block_write_size < BLOCK_SIZE)
+        //     fs.read_block(blkno, (char*)inner_buf);
 
-        //不是全写的——需要读，修改部分后写回
-        if(block_offset!=0 || block_write_size < BLOCK_SIZE)
-            fs.read_block(blkno, (char*)inner_buf);
+        // //写
+        // memcpy(inner_buf + block_offset, buf + written_size, block_write_size);
+        // fs.write_block(blkno, inner_buf);
 
-        //写
+        /* 使用缓存 */
+        char *inner_buf = fs.block_cache_mgr_
+                .get_block_cache(blkno)
+                ->data();
+        fs.block_cache_mgr_.get_block_cache(blkno)->modified_ = true;
         memcpy(inner_buf + block_offset, buf + written_size, block_write_size);
-        fs.write_block(blkno, inner_buf);
+        //
 
         written_size += block_write_size;
         pos += block_write_size;

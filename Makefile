@@ -5,7 +5,7 @@ TARGET=init_ client_#生成文件
 
 #源文件和对象文件
 INIT_SRCS=src/init.cpp
-CLIENT_SRCS=src/client.cpp src/fs.cpp src/inode.cpp src/login.cpp
+CLIENT_SRCS=src/BlockCache.cpp src/client.cpp src/fs.cpp src/inode.cpp src/login.cpp
 
 INIT_OBJS=$(INIT_SRCS:.cpp=.o)
 CLIENT_OBJS=$(CLIENT_SRCS:.cpp=.o)

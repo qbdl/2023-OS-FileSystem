@@ -131,7 +131,7 @@ int FileSystem::alloc_block()
     return blkno;
 }
 
-//blkno块=>buf
+//磁盘blkno块=>buf
 bool FileSystem::read_block(int blkno, char* buf) 
 {
     // std::cout<<OFFSET_DATA + blkno*BLOCK_SIZE<<"\n";
@@ -143,7 +143,7 @@ bool FileSystem::read_block(int blkno, char* buf)
     return true;
 }
 
-//buf=>blkno块
+//buf=>磁盘blkno块
 bool FileSystem::write_block(int blkno, char* buf) 
 {
     disk.seekg(OFFSET_DATA + blkno*BLOCK_SIZE, ios::beg);

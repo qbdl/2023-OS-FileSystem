@@ -6,6 +6,7 @@
 #include"../include/superBlock.h"
 #include"../include/Inode.h"
 #include"../include/parameter.h"
+#include"../include/BlockCache.h"
 #include<string>
 #include<fstream>
 
@@ -31,8 +32,8 @@ public:
     int alloc_block();//分配一个空闲block
     
     /* 内部 */
-    bool read_block(int blkno, char* buf);//获取一个物理块的所有内容，返回指向这片缓存的buffer(char *)类型
-    bool write_block(int blkno, char* buf);//写入一个物理块(全覆盖)
+    bool read_block(int blkno, char* buf);//磁盘blkno块=>buf
+    bool write_block(int blkno, char* buf);//buf=>磁盘blkno块
 
     bool saveFile(const std::string& src, const std::string& filename);//外部文件写入磁盘中
     int find_from_path(const std::string& path);//文件树 path =>inode号
@@ -46,6 +47,8 @@ private:
     SuperBlock sblock;
     Inode inodes[INODE_NUM];
     char data_[DATA_SIZE];
+
+    BlockCacheMgr block_cache_mgr_;
 
 };
 
