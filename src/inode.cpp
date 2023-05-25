@@ -279,3 +279,29 @@ int Inode::get_block_id(int inner_id)
     }
     return FAIL;
 }
+
+//copy inode
+int Inode::copy_inode(Inode &src)
+{
+    i_mode = src.i_mode;
+    i_size = src.i_size;
+    i_mtime = i_atime = get_cur_time();
+
+    /* 复制物理块内容（逐块复制） */
+    int blknum = (src.i_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    for(int i=0; i<blknum; i++) {
+        int srcno = src.get_block_id(i);
+        int new_blkno = fs.alloc_block();
+        if(new_blkno == FAIL) {
+            cerr << "copyFrom: No free block" << "\n";
+            return FAIL;
+        }
+
+        char *src_buf = fs.block_cache_mgr_.get_block_cache(srcno)->data();
+        char *new_buf = fs.block_cache_mgr_.get_block_cache(new_blkno)->data();
+        memcpy(new_buf, src_buf, BLOCK_SIZE);
+
+        this->i_addr[i++] = new_blkno;//TODO:暂时还是直接索引
+    }
+    return 0; 
+}

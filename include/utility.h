@@ -4,6 +4,8 @@
 #include<string>
 #include<sstream>
 #include <ctime>
+#include <chrono>
+
 using namespace std;
 
 vector<string> split_path(const string &path)
@@ -29,8 +31,10 @@ string change_to_localTime(int time)
     return string(buffer);
 }
 
-
-
+time_t get_cur_time() 
+{
+    return chrono::system_clock::to_time_t(chrono::system_clock::now());
+}
 
 
 #endif

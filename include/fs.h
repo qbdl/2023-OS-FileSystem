@@ -39,12 +39,13 @@ public:
 
 public:
     /* 外部命令 */
-    bool ls(const std::string& path);//列出目录
-    bool cat(const std::string& path);//输出指定文件的内容
-    bool changeDir(const std::string& path);//切换目录
-    bool saveFile(const std::string& src, const std::string& filename);//外部文件写入磁盘中
-    bool createDir(const std::string& path);//创建目录
-    
+    bool ls(const std::string& path);//ls 列出目录
+    bool cat(const std::string& path);//cat 输出指定文件的内容
+    bool changeDir(const std::string& path);//cd 切换目录
+    bool saveFile(const std::string& src, const std::string& filename);//save 外部文件写入磁盘中
+    bool createDir(const std::string& path);//mkdir 创建目录
+    bool deleteFile(const std::string& path);//rm 删除文件
+    bool copyFile(const std::string& src, const std::string& dst);//cp 复制文件
 
 
 private:

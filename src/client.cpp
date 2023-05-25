@@ -54,12 +54,10 @@ int main()
             fs.createDir(tokens[1]);
         else if(tokens[0] == "cat")
             fs.cat(tokens[1]);
-        // else if(tokens[0] == "rm"){
-        //     fs.deleteFile(tokens[1]);
-        // }
-        // else if(tokens[0] == "cp"){
-        //     fs.copyFile(tokens[1], tokens[2]);
-        // }
+        else if(tokens[0] == "rm")
+            fs.deleteFile(tokens[1]);
+        else if(tokens[0] == "cp")
+            fs.copyFile(tokens[1], tokens[2]);
         else if(tokens[0] == "save"){
             fs.saveFile(tokens[1], tokens[2]);
         }

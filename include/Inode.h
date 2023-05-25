@@ -47,15 +47,16 @@ public:
 		ITEXT = 0x20		//内存inode对应进程图像的正文段
     };
 
-	enum FileType {
+	enum FileType 
+	{
         Unknown = 0x40,
         RegularFile = 0x80,
         Directory = 0x100,
         Link = 0x200
     };
 
-    Inode(){};
-    ~Inode(){};
+    Inode(){;};
+    ~Inode(){;};
 
 public:
 	/*Inode 特有*/
@@ -85,6 +86,8 @@ public:
 	int read_at(int offset, char *buf, int size);//文件内offset~offset+size=>buf
 	int write_at(int offset, const char* buf, int size);//buf=>文件内offset~offset+size
 	
+	int copy_inode(Inode &src);//copy inode
+
 	int resize_file(int size);//resize file大小
 
 	int push_back_block();//inode级 分配block(调用fs的分配block)

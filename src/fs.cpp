@@ -1,8 +1,6 @@
 #include"../include/fs.h"
 #include"../include/Inode.h"
 #include"../include/utility.h"
-#include <chrono>
-#include <ctime>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -88,11 +86,6 @@ FileSystem::~FileSystem()
     
     // 关闭文件
     disk.close();
-}
-
-time_t get_cur_time() 
-{
-    return chrono::system_clock::to_time_t(chrono::system_clock::now());
 }
 
 //分配一个空闲inode，并初步初始化
@@ -452,4 +445,40 @@ bool FileSystem::createDir(const string& path)
     
     return true;
     // return path_no;
+}
+
+//rm 删除文件
+bool FileSystem::deleteFile(const string& path)
+{
+    
+    return true;
+}
+    
+//cp 复制文件
+bool FileSystem::copyFile(const string& src, const string& dst)
+{
+    int src_ino = find_from_path(src);
+    if(src_ino == FAIL) {
+        cerr << "cp: cannot stat '" << src << "': No such file or directory" << "\n";
+        return false;
+    }
+
+    int dst_dir;
+    if(dst.rfind('/') == -1)
+        dst_dir = user->current_dir_ino;
+    else 
+        dst_dir = find_from_path(dst.substr(0, dst.rfind('/')));
+
+
+    int dst_ino = find_from_path(dst);
+    if(dst_ino != FAIL) {
+        cerr << "cp: cannot stat '" << dst << "': File exists" << "\n";
+        return false;
+    }
+
+    // 复制inode和数据
+    int new_ino = inodes[dst_dir].create_file(dst.substr(dst.rfind('/')+1), false);
+    inodes[new_ino].copy_inode(inodes[src_ino]);
+
+    return true;    
 }
