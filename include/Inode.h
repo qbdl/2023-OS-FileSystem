@@ -82,15 +82,20 @@ public:
 
 	/* 内部实现 */
 	std::vector<DirectoryEntry> get_entry();//获取当前文件(目录文件)的所有目录项
+	int set_entry(std::vector<DirectoryEntry>& entrys);//设置 所有目录项
+	int delete_file_entry(const std::string &fileName);// 删除目录项，返回Inode号，但是没有删除Inode(调用者保证删除目录时子文件的处理)
+
 
 	int read_at(int offset, char *buf, int size);//文件内offset~offset+size=>buf
 	int write_at(int offset, const char* buf, int size);//buf=>文件内offset~offset+size
 	
 	int copy_inode(Inode &src);//copy inode
+	int clear_();//删除 该inode
 
 	int resize_file(int size);//resize file大小
 
 	int push_back_block();//inode级 分配block(调用fs的分配block)
+	int pop_back_block();//inode级 释放block(调用fs的释放block)
 
 	int get_block_id(int inner_id);//文件内blockno=>磁盘blockno
 

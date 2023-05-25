@@ -84,8 +84,8 @@ FileSystem::~FileSystem()
     //真正的文件数据不应该全部写回，应在修改后考虑写回，这里不进行写回
 
     
-    // 关闭文件
-    disk.close();
+    // 关闭文件（后续还需要使用fstream流）
+    // disk.close();
 }
 
 //分配一个空闲inode，并初步初始化
@@ -103,13 +103,23 @@ int FileSystem::alloc_inode()
     return ino;
 }
 
+//放回一个inode
+int FileSystem::dealloc_inode(int ino)
+{
+    sblock.s_inode[sblock.s_ninode++] = ino;
+    cout << "dealloc inode : " << ino << "\n";
+    
+    return 0;
+}
+
 //分配一个空闲块,返回块号
 int FileSystem::alloc_block()
 {
     /* 当前s_free的空闲块数不足（当前的100块用完） */
+    //TODO:s_free[0]到底是什么，可能有点问题（init.cpp的部分可能也有点问题）
     int blkno;
     if(sblock.s_nfree <= 1){
-        //换下一个新表（101个元素，第一个是长度，后续是内容）
+        //换表 + sblock内容更新 （101个元素，第一个是长度，后续是内容）
         char buf[BLOCK_SIZE]="";//这里其实不用取这么大空间
         read_block(sblock.s_free[0],buf);//s_free[0]指向下一块表的位置（init时候决定）
         int *table=(int*)buf;
@@ -128,6 +138,31 @@ int FileSystem::alloc_block()
     cout << "alloc block : " << blkno << "\n";
     return blkno;
 }
+
+//放回一个物理块
+int FileSystem::dealloc_block(int blkno)
+{
+    //TODO:s_free[0]到底是什么，可能有点问题
+    if(sblock.s_nfree >= 100){ // free list 满了
+        //换表
+        char buf[BLOCK_SIZE]="";
+        int *table=(int *)buf;
+        table[0]=sblock.s_nfree;
+        for(int i=0;i<sblock.s_nfree;i++)
+            table[i+1] = sblock.s_free[i];
+        write_block(sblock.s_free[0],buf);//对应alloc_block的读取
+        
+        //sblock更新
+        sblock.s_nfree=1;
+    }
+    //释放
+    sblock.s_free[sblock.s_nfree++]=blkno;
+
+    cout << "dealloc block : " << blkno << "\n";
+
+    return 0;
+}
+
 
 //磁盘blkno块=>buf
 bool FileSystem::read_block(int blkno, char* buf) 
@@ -455,7 +490,27 @@ bool FileSystem::createDir(const string& path)
 //rm 删除文件
 bool FileSystem::deleteFile(const string& path)
 {
-    
+    int dir_ino=find_fa_ino(path);
+    int ino=find_from_path(path);
+    if(dir_ino==FAIL || ino==FAIL){
+        cerr << "rm: '" << path << "' No such file or directory" << "\n";
+        return false;
+    }
+
+    if(inodes[ino].i_mode & Inode::FileType::Directory) {
+        cerr << "rm: cannot remove '" << path << "': Is a directory" << "\n";
+        return false;
+    }
+
+    // 从父目录中删除entry项
+    ino = inodes[dir_ino].delete_file_entry(path.substr(path.rfind('/')+1));
+    if (ino == FAIL)
+        return false;
+
+    // 删除文件 释放inode
+    inodes[ino].clear_();
+
+
     return true;
 }
     

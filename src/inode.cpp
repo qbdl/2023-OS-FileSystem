@@ -95,6 +95,51 @@ vector<DirectoryEntry> Inode::get_entry()
     return entrys;
 }
 
+//设置 所有目录项
+int Inode::set_entry(std::vector<DirectoryEntry>& entrys)
+{
+    if(!write_at(0, (char *)entrys.data(), i_size)) {
+        cerr << "setEntry: write directory entries failed." << "\n";
+        return FAIL;
+    }
+    return 0;
+}
+
+// 删除目录项，返回Inode号，但是没有删除Inode(调用者保证删除目录时子文件的处理)
+int Inode::delete_file_entry(const std::string &fileName)
+{
+    auto entrys = get_entry();
+    int ino;
+
+    bool found = false;
+    for (int i=0; i<entrys.size(); i++) {
+        if (found)                              // 删除节点之后，后续的目录项前移
+            entrys[i-1] = entrys[i];
+        else{
+           if(entrys[i].m_ino && strcmp(entrys[i].m_name, fileName.c_str()) == 0) {
+                ino = entrys[i].m_ino;
+                found = true;
+           }
+        }
+    }
+    if(!found) {
+        std::cerr << "deleteFile: File not found." << "\n";
+        return FAIL;
+    }
+
+    // 更新目录文件内容
+    if(set_entry(entrys) == FAIL)
+        return FAIL;
+
+
+    i_size -= ENTRY_SIZE;                       // 目录文件收缩
+    if (i_size % BLOCK_SIZE == 0)               // 需要弹出最后一块物理块
+        pop_back_block();
+
+    return ino;
+}
+
+
 //在目录文件中加.与..的目录项
 int Inode::init_as_dir(int ino, int fa_ino)
 {
@@ -263,6 +308,22 @@ int Inode::push_back_block()
     return blkno;
 }
 
+//inode级 释放block(调用fs的释放block)
+int Inode::pop_back_block()
+{
+    //TODO:暂时还是直接索引
+    int blkno = i_addr[i_size / BLOCK_SIZE +1];//到释放前-> +1
+    if(blkno == 0) 
+        return FAIL;
+
+    fs.dealloc_block(blkno);
+    i_addr[i_size / BLOCK_SIZE +1] = 0;
+
+    return 0;
+}
+
+
+
 //文件内 blockno => 磁盘全局 blockno
 int Inode::get_block_id(int inner_id)
 {
@@ -304,4 +365,20 @@ int Inode::copy_inode(Inode &src)
         this->i_addr[i++] = new_blkno;//TODO:暂时还是直接索引
     }
     return 0; 
+}
+
+//删除 该inode
+int Inode::clear_()
+{
+    //block块释放
+    for (int i=0; i<10; i++) {
+        if (i_addr[i]) {
+            fs.dealloc_block(i_addr[i]);
+            i_addr[i] = 0;
+        }
+    }
+    //inode释放
+    fs.dealloc_inode(i_ino);
+
+    return 0;
 }

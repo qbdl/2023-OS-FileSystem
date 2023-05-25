@@ -28,17 +28,16 @@ void init_superblock()
 
     //初始化 superblock管理的 Inode及栈//TODO:注释重新修改（把内容放进readme里）
     sblock.s_ninode=INODE_NUM;
-    for(int i=0; i<INODE_NUM; i++){
+    for(int i=0; i<INODE_NUM; i++)
         sblock.s_inode[i]=i;//固定后不变的，仅是移动指针（栈顶）
-    }
+    
 
     //初始化data表
     int data_i=0;
     //初始化 superblock的空闲表
     sblock.s_nfree=100;//Unix V6++设计只有100个数据块（剩余的数据块不是用统一的数据结构管理）
-    for(int i=0;i<100&data_i<DATA_NUM;i++){
+    for(int i=0;i<100 && data_i<DATA_NUM;i++)
         sblock.s_free[i]=data_i++;//固定后不变的，仅是移动指针（栈顶）
-    }
 
     //数据区的数据块都是以100个组织的
 

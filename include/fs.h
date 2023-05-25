@@ -28,9 +28,11 @@ public:
     void set_current_dir_name(const std::string& dir_name);//set 当前目录名
 
 public:
-    /* 分配 接口*/
+    /* 分配与释放 接口*/
     int alloc_inode();//分配一个空闲inode，并初步初始化
     int alloc_block();//分配一个空闲block
+    int dealloc_inode(int ino);//放回一个inode
+    int dealloc_block(int blkno);//放回一个物理块
     
     /* 内部 */
     bool read_block(int blkno, char* buf);//磁盘blkno块=>buf
