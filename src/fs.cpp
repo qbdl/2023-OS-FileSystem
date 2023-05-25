@@ -193,6 +193,15 @@ int FileSystem::find_from_path(const string& path)
     return ino;    
 }
 
+//上级文件夹ino
+int FileSystem::find_fa_ino(const string& path)
+{
+    if(path.rfind('/') == -1)
+        return user->current_dir_ino;
+    else
+        return find_from_path(path.substr(0, path.rfind('/')));
+}
+
 //set 当前目录名
 void FileSystem::set_current_dir_name(const string& dir_name)
 {
@@ -232,14 +241,10 @@ bool FileSystem::saveFile(const string& src, const string& filename)
     //写入inode信息
 
     int dir_ino;
-    if(filename.rfind('/') == -1)
-        dir_ino = user->current_dir_ino;
-    else {
-        dir_ino = find_from_path(filename.substr(0, filename.rfind('/')));
-        if (dir_ino == FAIL) {
-            cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
-            return false;
-        }
+    dir_ino=find_fa_ino(filename);
+    if (dir_ino == FAIL) {
+        cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
+        return false;
     }
 
 
@@ -463,13 +468,7 @@ bool FileSystem::copyFile(const string& src, const string& dst)
         return false;
     }
 
-    int dst_dir;
-    if(dst.rfind('/') == -1)
-        dst_dir = user->current_dir_ino;
-    else 
-        dst_dir = find_from_path(dst.substr(0, dst.rfind('/')));
-
-
+    int dst_dir=find_fa_ino(dst);
     int dst_ino = find_from_path(dst);
     if(dst_ino != FAIL) {
         cerr << "cp: cannot stat '" << dst << "': File exists" << "\n";

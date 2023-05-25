@@ -36,6 +36,7 @@ public:
     bool read_block(int blkno, char* buf);//磁盘blkno块=>buf
     bool write_block(int blkno, char* buf);//buf=>磁盘blkno块
     int find_from_path(const std::string& path);//文件树 path =>inode号
+    int find_fa_ino(const std::string& path);//上级文件夹ino
 
 public:
     /* 外部命令 */
