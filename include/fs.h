@@ -35,8 +35,6 @@ public:
     /* 内部 */
     bool read_block(int blkno, char* buf);//磁盘blkno块=>buf
     bool write_block(int blkno, char* buf);//buf=>磁盘blkno块
-
-    bool saveFile(const std::string& src, const std::string& filename);//外部文件写入磁盘中
     int find_from_path(const std::string& path);//文件树 path =>inode号
 
 public:
@@ -44,7 +42,8 @@ public:
     bool ls(const std::string& path);//列出目录
     bool cat(const std::string& path);//输出指定文件的内容
     bool changeDir(const std::string& path);//切换目录
-    
+    bool saveFile(const std::string& src, const std::string& filename);//外部文件写入磁盘中
+    bool createDir(const std::string& path);//创建目录
     
 
 

@@ -443,3 +443,13 @@ bool FileSystem::changeDir(const std::string& path)
 
     return true;
 }
+
+//mkdir 创建目录
+bool FileSystem::createDir(const string& path)
+{
+    int path_no = inodes[user->current_dir_ino].create_file(path, true);
+    cout << "make folder: " << path << " success! inode:" << path_no << "\n";
+    
+    return true;
+    // return path_no;
+}

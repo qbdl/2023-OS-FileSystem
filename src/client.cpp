@@ -50,9 +50,8 @@ int main()
         }
         else if(tokens[0] == "cd")
             fs.changeDir(tokens[1]);
-        // else if(tokens[0] == "mkdir"){
-        //     fs.createDir(user.current_dir_,tokens[1]);
-        // }
+        else if(tokens[0] == "mkdir")
+            fs.createDir(tokens[1]);
         else if(tokens[0] == "cat")
             fs.cat(tokens[1]);
         // else if(tokens[0] == "rm"){
@@ -61,9 +60,9 @@ int main()
         // else if(tokens[0] == "cp"){
         //     fs.copyFile(tokens[1], tokens[2]);
         // }
-        // else if(tokens[0] == "save"){
-        //     fs.saveFile(tokens[1], tokens[2]);
-        // }
+        else if(tokens[0] == "save"){
+            fs.saveFile(tokens[1], tokens[2]);
+        }
         // else if(tokens[0] == "export"){
         //     fs.exportFile(tokens[1], tokens[2]);
         // }
