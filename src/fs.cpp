@@ -1,4 +1,5 @@
 #include"../include/fs.h"
+#include"../include/Inode.h"
 #include <chrono>
 #include <ctime>
 #include <iostream>
@@ -350,5 +351,23 @@ bool FileSystem::ls(const string& path)
         }
     }
 
+    return true;
+}
+
+//cat 输出指定文件的内容
+bool FileSystem::cat(const string& path)
+{
+    int path_ino=find_from_path(path);
+    if(path_ino==FAIL){
+        cerr<<"cat: cannot access '" << path << "': No such file or directory" << "\n";
+        return false;
+    }
+
+    Inode inode=inodes[path_ino];
+    string str;
+    str.resize(inode.i_size+1);//否则会缓冲区溢出！
+    inode.read_at(0,(char *)str.data(),inode.i_size);
+
+    cout<<str<<"\n";
     return true;
 }

@@ -23,8 +23,6 @@ public:
     bool initialize_filetree_from_externalFile(const std::string &path, const int root_no);
     /* 外部 接口*/
     void set_u(User *u) {user = u;};
-    /* 外部命令 */
-    bool ls(const std::string& path);
     
 public:
     /* 分配 接口*/
@@ -37,6 +35,11 @@ public:
 
     bool saveFile(const std::string& src, const std::string& filename);//外部文件写入磁盘中
     int find_from_path(const std::string& path);//文件树 path =>inode号
+
+public:
+    /* 外部命令 */
+    bool ls(const std::string& path);//列出目录
+    bool cat(const std::string& path);//输出指定文件的内容
 
 private:
     User *user;//每个fs对应一个user
