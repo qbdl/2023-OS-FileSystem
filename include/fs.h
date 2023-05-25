@@ -22,6 +22,9 @@ public:
     bool initialize_filetree_from_externalFile(const std::string &path, const int root_no);
     /* 外部 接口*/
     void set_u(User *u) {user = u;};
+    /* 外部命令 */
+    bool ls(const std::string& path);
+    
 public:
     /* 分配 接口*/
     int alloc_inode();//分配一个空闲inode，并初步初始化

@@ -2,6 +2,9 @@
 #include"../include/user.h"
 #include"../include/fs.h"
 #include<iostream>
+#include<sstream>
+#include<vector>
+#include<string>
 
 using namespace std;
 
@@ -16,9 +19,39 @@ int main()
 
     //将初始化文件树的部分在这里完成而非init.cpp（读初始的磁盘文件到内存变量+读用户文件到磁盘文件myDisk.img&内存变量）
     // 开始扫描文件 并创建对应普通文件与目录文件
-    if(!fs.initialize_filetree_from_externalFile("my_test",user.current_dir_ino)) {
-        cout << "Initialize failed!" <<"\n";
-        return -1;
+    while (true) {
+        // 读取用户输入的命令
+        string input;
+        cout << ">> ";
+        getline(cin, input);
+
+        // 解析命令
+        istringstream iss(input);
+        string s;
+        vector<string> tokens;
+        while(iss >> s){
+            tokens.emplace_back(s);
+        }
+        if (tokens.empty()) {
+            continue;
+        }
+
+        if(tokens[0] == "init"){
+            // if(!fs.initialize_filetree_from_externalFile(tokens[1],user.current_dir_ino)) {
+            if(!fs.initialize_filetree_from_externalFile("my_test",user.current_dir_ino)) {
+                cout << "Initialize failed!" << "\n";
+                return -1;
+            }
+            else
+                cout << "Initialize success!" << "\n";
+        }
+        else if(tokens[0] == "ls"){
+            if(tokens.size() >= 2){
+                fs.ls(tokens[1]);
+            }
+            else    
+                fs.ls("");
+        }
     }
 
     cout<<"client over!"<<"\n";

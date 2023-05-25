@@ -60,6 +60,9 @@ int Inode::create_file(const string& fileName, bool is_dir)
 
     DirectoryEntry new_entry(ino,fileName.c_str(),is_dir? DirectoryEntry::FileType::Directory : DirectoryEntry::FileType::RegularFile);
     new_entry_block_[entrynum % ENTRYS_PER_BLOCK]=new_entry;
+
+    fs.write_block(get_block_id(blknum), (char*)new_entry_block_);
+
     i_size+=ENTRY_SIZE;
 
     return ino;

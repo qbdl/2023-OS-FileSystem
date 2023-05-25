@@ -316,3 +316,39 @@ bool FileSystem::initialize_filetree_from_externalFile(const string &path, const
     // 返回目录文件的inode号
     return true;
 }
+
+
+/* 命令实现 */
+
+//ls 列出目录的内容
+bool FileSystem::ls(const string& path)
+{
+    //获取path目录的inode
+    int path_ino;
+    if(path.empty())
+        path_ino=user->current_dir_ino;
+    else
+        path_ino=find_from_path(path);
+    
+    if (path_ino == FAIL) {
+        cerr << "ls: cannot access '" << path << "': No such file or directory" << "\n";
+        return false;
+    }
+
+    //通过get_entry获取所有目录项
+    Inode inode=inodes[path_ino];
+
+    auto entries=inode.get_entry();
+    for(auto &entry : entries){
+        if(entry.m_ino){
+            string name(entry.m_name);
+            cout<<name;
+            if (entry.m_type == DirectoryEntry::FileType::Directory) {
+                cout << "/";
+            }
+            cout << "\n";
+        }
+    }
+
+    return true;
+}
