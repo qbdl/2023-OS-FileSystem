@@ -14,13 +14,13 @@ FileSystem fs("myDisk.img");
 int main()
 {
     User user=login();
-    user.set_current_dir(1);//TODO:需要动态修改
     fs.set_u(&user);
+    fs.set_current_dir(1);//TODO:需要动态修改
 
     while (true) {
         // 读取用户输入的命令
         string input;
-        cout << ">> ";
+        cout << "$ "<< user.get_current_dir_name() << " >>";
         getline(cin, input);
 
         // 解析命令
@@ -48,15 +48,13 @@ int main()
             else    
                 fs.ls("");
         }
-        // else if(tokens[0] == "cd"){
-        //     fs.changeDir(tokens[1]);
-        // }
+        else if(tokens[0] == "cd")
+            fs.changeDir(tokens[1]);
         // else if(tokens[0] == "mkdir"){
         //     fs.createDir(user.current_dir_,tokens[1]);
         // }
-        else if(tokens[0] == "cat"){
+        else if(tokens[0] == "cat")
             fs.cat(tokens[1]);
-        }
         // else if(tokens[0] == "rm"){
         //     fs.deleteFile(tokens[1]);
         // }
@@ -69,9 +67,8 @@ int main()
         // else if(tokens[0] == "export"){
         //     fs.exportFile(tokens[1], tokens[2]);
         // }
-        else if(tokens[0] == "exit"){
+        else if(tokens[0] == "exit")
             break;
-        }
         /* 
         else if(tokens[0] == "touch"){
             fs.createFile(tokens[1]);

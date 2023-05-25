@@ -1,5 +1,5 @@
-#ifndef USER
-#define USER
+#ifndef USER_H
+#define USER_H
 
 #include<string>
 
@@ -12,9 +12,14 @@ public:
     int uid;//uesr id
     int gid;//group id
 
-    int current_dir_ino;//当前路径文件的inode号
 public:
-    void set_current_dir(int inum) { current_dir_ino = inum; }
+    int current_dir_ino;//当前路径文件的inode号
+    std::string current_dir_name = "/";
+public:
+    int get_current_dir() const { return current_dir_ino; }
+    std::string get_current_dir_name() const { return current_dir_name; }
+
+
 };
 
 #endif

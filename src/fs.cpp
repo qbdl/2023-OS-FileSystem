@@ -1,5 +1,6 @@
 #include"../include/fs.h"
 #include"../include/Inode.h"
+#include"../include/utility.h"
 #include <chrono>
 #include <ctime>
 #include <iostream>
@@ -105,6 +106,7 @@ int FileSystem::alloc_inode()
     inodes[ino].i_gid = user->gid;
     inodes[ino].i_atime = inodes[ino].i_mtime = get_cur_time();
 
+    cout << "alloc inode : " << ino << "\n";
     return ino;
 }
 
@@ -129,6 +131,8 @@ int FileSystem::alloc_block()
         cerr << "error : block list empty" << "\n";
         return FAIL;
     }
+
+    cout << "alloc block : " << blkno << "\n";
     return blkno;
 }
 
@@ -194,6 +198,33 @@ int FileSystem::find_from_path(const string& path)
     }
 
     return ino;    
+}
+
+//set 当前目录名
+void FileSystem::set_current_dir_name(const string& dir_name)
+{
+    vector<string>paths=split_path(dir_name);
+
+    for(auto &path:paths){
+        if(path==".."){//考虑向上切换目录情况
+            if(user->current_dir_name !="/") {
+                size_t pos = user->current_dir_name.rfind('/');
+                user->current_dir_name = user->current_dir_name.substr(0, pos);
+                if(user->current_dir_name == "")
+                    user->current_dir_name = "/";
+            }
+            else
+                cerr<<"Can't set current dir_name : has reached the root!"<<"\n";        
+        }
+        else if(path=="."){;}
+        else{
+            if (user->current_dir_name.back() != '/')
+                user->current_dir_name += '/';
+            user->current_dir_name += path;
+        }
+    }
+
+
 }
 
 //外部文件写入磁盘中
@@ -289,7 +320,7 @@ bool FileSystem::initialize_filetree_from_externalFile(const string &path, const
                 if (S_ISDIR(buf.st_mode))
                 {
                     ino = inodes[root_no].create_file(Name, true);
-                    cout << "make folder: " << Name << " success! inode:" << ino << "\n";
+                    // cout << "make folder: " << Name << " success! inode:" << ino << "\n";
                     
                     //递归进入
                     user->current_dir_ino = ino;
@@ -304,11 +335,11 @@ bool FileSystem::initialize_filetree_from_externalFile(const string &path, const
                     if(saveFile(path + '/' + Name, Name) == false)
                         return false;
 
-                    cout << "make file: " << Name << " success!"<<"\n";
+                    // cout << "make file: " << Name << " success!"<<"\n";
                 }
-            }
-            else{
-                cout << "other file" << Name <<"\n";
+                else{
+                    cout << "other file" << Name <<"\n";
+                }
             }
         }
     }
@@ -336,15 +367,25 @@ bool FileSystem::ls(const string& path)
         return false;
     }
 
-    //通过get_entry获取所有目录项
+    // 检查是否是目录
     Inode inode=inodes[path_ino];
+    if(!(inode.i_mode & Inode::FileType::Directory)) {
+        cerr << "'" << path << "' is not a directory" << "\n";
+        return FAIL;
+    }
 
     auto entries=inode.get_entry();
     for(auto &entry : entries){
         if(entry.m_ino){
+            Inode child_inode = inodes[entry.m_ino];
             string name(entry.m_name);
+            string mtime=change_to_localTime(child_inode.i_mtime);
+
+            cout<<setw(7)<<user->username;
+            cout<<setw(5)<<child_inode.i_size  << "B ";
+            cout<<mtime<<" ";
             cout<<name;
-            if (entry.m_type == DirectoryEntry::FileType::Directory) {
+            if (child_inode.i_mode & Inode::FileType::Directory) {
                 cout << "/";
             }
             cout << "\n";
@@ -357,17 +398,48 @@ bool FileSystem::ls(const string& path)
 //cat 输出指定文件的内容
 bool FileSystem::cat(const string& path)
 {
+    //ino
     int path_ino=find_from_path(path);
     if(path_ino==FAIL){
         cerr<<"cat: cannot access '" << path << "': No such file or directory" << "\n";
         return false;
     }
 
-    Inode inode=inodes[path_ino];
+    //是否为普通文件
+    Inode &inode=inodes[path_ino];
+    if (inode.i_mode & Inode::Directory) {
+        std::cerr << "cat: " << path << ": Is a directory" << "\n";
+        return false;
+    }
+
     string str;
     str.resize(inode.i_size+1);//否则会缓冲区溢出！
     inode.read_at(0,(char *)str.data(),inode.i_size);
 
     cout<<str<<"\n";
+    return true;
+}
+
+//cd 切换目录
+bool FileSystem::changeDir(const std::string& path)
+{
+    //inode
+    int path_ino=find_from_path(path);
+    if(path_ino==FAIL){
+        cerr << "Failed to find directory: " << path << "\n";
+        return false;
+    }
+
+    //是否为普通文件
+    Inode inode=inodes[path_ino];
+    if((inode.i_mode & Inode::FileType::Directory)==0){
+        cerr << "'" << path << "' is not a directory" << "\n";
+        return false;
+    }
+
+    //set inode & dirname
+    this->set_current_dir(path_ino);
+    this->set_current_dir_name(path);
+
     return true;
 }

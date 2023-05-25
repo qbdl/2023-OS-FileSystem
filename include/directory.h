@@ -8,29 +8,18 @@
 class DirectoryEntry
 {
 public:
-    static const int DIR_SIZE=24;//文件名最大长度
-
-    enum class FileType 
-    {
-        Unknown,
-        RegularFile,
-        Directory,
-        Link,
-        // ...
-    };
+    static const int DIR_SIZE=28;//文件名最大长度
 
 public:
     DirectoryEntry(){};
-    DirectoryEntry(int ino,const char * name,FileType type=FileType::Unknown){
+    DirectoryEntry(int ino,const char * name){
         m_ino=ino;
         strcpy(m_name,name);
-        m_type=type;
     }
     ~DirectoryEntry(){};
 public:
     int m_ino;//文件INode号
     char m_name[DIR_SIZE];//文件名
-    FileType m_type;//文件类型
 };
 
 #endif

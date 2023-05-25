@@ -1,6 +1,5 @@
 #include"../include/Inode.h"
 #include"../include/BlockCache.h"
-#include "../include/directory.h"
 #include"../include/fs.h"
 #include<iostream>
 
@@ -27,8 +26,11 @@ int Inode::create_file(const string& fileName, bool is_dir)
 
     //创建该文件的inode
         // 分配一个新的inode用来存放新创建的文件或者目录
-
+        
         //（创建该文件的目录内容)
+        
+        // 设置文件类型
+        
         //增加父文件的目录项
     
     auto entrys=get_entry();
@@ -52,7 +54,8 @@ int Inode::create_file(const string& fileName, bool is_dir)
 
     if(is_dir)
         fs.inodes[ino].init_as_dir(ino,i_ino);
-
+    else
+        fs.inodes[ino].i_mode |= FileType::RegularFile;
 
     int blknum = entrynum / ENTRYS_PER_BLOCK;
     
@@ -66,7 +69,7 @@ int Inode::create_file(const string& fileName, bool is_dir)
     // fs.read_block(get_block_id(blknum),(char*)new_entry_block);
     // DirectoryEntry* new_entry_block_=(DirectoryEntry*)new_entry_block;
 
-    DirectoryEntry new_entry(ino,fileName.c_str(),is_dir? DirectoryEntry::FileType::Directory : DirectoryEntry::FileType::RegularFile);
+    DirectoryEntry new_entry(ino,fileName.c_str());
     new_entry_block_[entrynum % ENTRYS_PER_BLOCK]=new_entry;
 
     // fs.write_block(get_block_id(blknum), (char*)new_entry_block_);
@@ -95,6 +98,8 @@ vector<DirectoryEntry> Inode::get_entry()
 //在目录文件中加.与..的目录项
 int Inode::init_as_dir(int ino, int fa_ino)
 {
+    i_mode |= FileType::Directory;
+
     /* 分配 block 来存 目录项*/
     int sub_dir_blk = push_back_block();
     if (sub_dir_blk == FAIL) {
@@ -113,10 +118,10 @@ int Inode::init_as_dir(int ino, int fa_ino)
 
     // DirectoryEntry dot_entry(ino, 
     //                     ".", 
-    //                     DirectoryEntry::FileType::Directory);
+    //                     Inode::FileType::Directory);
     // DirectoryEntry dotdot_entry(fa_ino, 
     //                             "..", 
-    //                             DirectoryEntry::FileType::Directory);
+    //                             Inode::FileType::Directory);
     // sub_entrys[0] = dot_entry;
     // sub_entrys[1] = dotdot_entry;
     // i_size += ENTRY_SIZE*2;
@@ -127,12 +132,8 @@ int Inode::init_as_dir(int ino, int fa_ino)
     auto cache_blk = fs.block_cache_mgr_.get_block_cache(sub_dir_blk);
     auto sub_entrys = (DirectoryEntry *)cache_blk->data();
     cache_blk->modified_ = true;
-    DirectoryEntry dot_entry(ino, 
-                        ".", 
-                        DirectoryEntry::FileType::Directory);
-    DirectoryEntry dotdot_entry(fa_ino, 
-                                "..", 
-                                DirectoryEntry::FileType::Directory);
+    DirectoryEntry dot_entry(ino,".");
+    DirectoryEntry dotdot_entry(fa_ino,"..");
     sub_entrys[0] = dot_entry;
     sub_entrys[1] = dotdot_entry;
     i_size += ENTRY_SIZE*2;    

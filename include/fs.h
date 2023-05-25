@@ -1,6 +1,6 @@
 //FileSystem
-#ifndef FILESYSTEM
-#define FILESYSTEM
+#ifndef FILESYSTEM_H
+#define FILESYSTEM_H
 
 #include"../include/user.h"
 #include"../include/superBlock.h"
@@ -21,9 +21,12 @@ public:
 public:
     /* 初始化 接口 */
     bool initialize_filetree_from_externalFile(const std::string &path, const int root_no);
+    
     /* 外部 接口*/
     void set_u(User *u) {user = u;};
-    
+    void set_current_dir(int inum) { user->current_dir_ino = inum; }//set 当前目录inode号
+    void set_current_dir_name(const std::string& dir_name);//set 当前目录名
+
 public:
     /* 分配 接口*/
     int alloc_inode();//分配一个空闲inode，并初步初始化
@@ -40,6 +43,10 @@ public:
     /* 外部命令 */
     bool ls(const std::string& path);//列出目录
     bool cat(const std::string& path);//输出指定文件的内容
+    bool changeDir(const std::string& path);//切换目录
+    
+    
+
 
 private:
     User *user;//每个fs对应一个user

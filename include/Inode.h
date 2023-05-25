@@ -47,6 +47,13 @@ public:
 		ITEXT = 0x20		//内存inode对应进程图像的正文段
     };
 
+	enum FileType {
+        Unknown = 0x40,
+        RegularFile = 0x80,
+        Directory = 0x100,
+        Link = 0x200
+    };
+
     Inode(){};
     ~Inode(){};
 
@@ -56,7 +63,7 @@ public:
 	int		i_lock;			//该内存inode的锁
 
 	/*DiskInode 共有*/
-    unsigned int i_mode;	//状态的标志位，定义见enum INODEFLAG
+    unsigned int i_mode;	//状态的标志位，定义见enum INODEFLAG 与 enum FileType
     int		i_nlink;	    // 硬链接计数（磁盘中的概念）:一个文件在文件系统中有多少个硬链接指向它。硬链接本质上是一个指向文件的目录条目，它允许在文件系统中为同一个文件创建多个名称。每个硬链接都指向同一个 Inode，因此它们共享相同的文件数据和元数据。
 		                    // 该文件在目录树中不同路径名的数量
 	short	i_uid;			//文件所有者的ID
