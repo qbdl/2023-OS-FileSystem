@@ -33,7 +33,7 @@ User verify(string username,string password)
     //读取用户信息
     while(!file.eof()){
         User user;
-        file>>user.username>>user.password;
+        file >> user.uid >> user.username >> user.password >> user.gid;
         userList.push_back(user);
     }
     file.close();
@@ -54,7 +54,7 @@ User verify(string username,string password)
 //外部接口
 User login()
 {
-    return verify("alice","123");
+    // return verify("alice","123");
 
     string username, password;
 
@@ -69,6 +69,7 @@ User login()
         User user = verify(username, password);
         if (user.username != "") {
             cout << "Login successful"<<"\n";
+            cout << user.username<<", Welcome Back!"<<"\n";
             return user;
         }
         else {
