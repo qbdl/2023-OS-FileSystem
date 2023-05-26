@@ -264,61 +264,6 @@ void FileSystem::set_current_dir_name(const string& dir_name)
 
 }
 
-//外部文件写入磁盘中
-bool FileSystem::saveFile(const string& src, const string& filename) 
-{
-    // 确定目标目录inode号
-
-    // 在目标目录下 inode层级 创建新文件
-
-    //读取源文件
-
-    //写入inode信息
-
-    int dir_ino;
-    dir_ino=find_fa_ino(filename);
-    if (dir_ino == FAIL) {
-        cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
-        return false;
-    }
-
-
-    string name = filename.substr(filename.rfind('/') + 1);
-    int ino = inodes[dir_ino].create_file(name, false);
-    if (ino == FAIL) {
-        cerr << "Failed to create file: " << filename << "\n";
-        return false;
-    }
-
-
-    Inode& inode = inodes[ino];
-    ifstream infile(src, ios::binary | ios::in);
-    if (!infile) {
-        cerr << "Failed to open file: " << src << "\n";
-        return false;
-    }
-    infile.seekg(0, ios::end);
-    size_t size = infile.tellg();
-    infile.seekg(0, ios::beg);
-    vector<char> data(size);
-    infile.read(data.data(), size);
-    // cout<<"saveFile data content:\n"<<data.data()<<"\n";
-
-
-    if (!inode.write_at(0, data.data(), size)) {
-        cerr << "Failed to write data to inode" << "\n";
-        return false;
-    }
-    inode.i_size = size;
-    inode.i_mtime = get_cur_time();
-    inode.i_atime = get_cur_time();
-    inode.i_nlink = 1;
-
-    infile.close();
-
-    return true;
-}
-
 //扫描源文件夹并在 文件系统中创建对应 普通文件与目录文件
 bool FileSystem::initialize_filetree_from_externalFile(const string &path, const int root_no)
 {
@@ -533,6 +478,98 @@ bool FileSystem::copyFile(const string& src, const string& dst)
     // 复制inode和数据
     int new_ino = inodes[dst_dir].create_file(dst.substr(dst.rfind('/')+1), false);
     inodes[new_ino].copy_inode(inodes[src_ino]);
+
+    return true;    
+}
+
+//save 外部文件写入磁盘中
+bool FileSystem::saveFile(const string& src, const string& filename) 
+{
+    // 确定目标目录inode号
+
+    // 在目标目录下 inode层级 创建新文件
+
+    //读取源文件
+
+    //写入inode信息
+
+    int dir_ino;
+    dir_ino=find_fa_ino(filename);
+    if (dir_ino == FAIL) {
+        cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
+        return false;
+    }
+
+
+    string name = filename.substr(filename.rfind('/') + 1);
+    int ino = inodes[dir_ino].create_file(name, false);
+    if (ino == FAIL) {
+        cerr << "Failed to create file: " << filename << "\n";
+        return false;
+    }
+
+
+    Inode& inode = inodes[ino];
+    ifstream infile(src, ios::binary | ios::in);
+    if (!infile) {
+        cerr << "Failed to open file: " << src << "\n";
+        return false;
+    }
+    infile.seekg(0, ios::end);
+    size_t size = infile.tellg();
+    infile.seekg(0, ios::beg);
+    vector<char> data(size);
+    infile.read(data.data(), size);
+    // cout<<"saveFile data content:\n"<<data.data()<<"\n";
+
+
+    if (!inode.write_at(0, data.data(), size)) {
+        cerr << "Failed to write data to inode" << "\n";
+        return false;
+    }
+    inode.i_size = size;
+    inode.i_mtime = get_cur_time();
+    inode.i_atime = get_cur_time();
+    inode.i_nlink = 1;
+
+    infile.close();
+
+    return true;
+}
+
+//export 磁盘中的文件导出到本地
+bool FileSystem::exportFile(const string& src, const string& outsideFile)
+{
+    int ino = find_from_path(src);
+    if (ino == FAIL) {
+        cerr << "Failed to find file: " << src << "\n";
+        return false;
+    }
+
+    Inode &inode = inodes[ino];
+    
+    // 判断是否为文件
+    if(!(inode.i_mode & Inode::FileType::RegularFile)) {
+        cerr << "Failed to export " << src << ". Is not a Regular File!" << "\n";
+        return false;
+    }
+
+    // 打开外部文件
+    ofstream fout(outsideFile, ios::binary);
+    if (!fout) {
+        cerr << "Failed to open file: " << outsideFile << "\n";
+        return false;
+    }
+
+    // 读取文件内容
+    int size = inode.i_size;
+    string buf;
+    buf.resize(size);
+    inode.read_at(0, (char *)buf.data(), size);
+
+    // 写入外部文件
+    fout.write(buf.data(), size);
+    fout.close();
 
     return true;    
 }

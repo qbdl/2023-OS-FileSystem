@@ -45,16 +45,18 @@ public:
     bool ls(const std::string& path);//ls 列出目录
     bool cat(const std::string& path);//cat 输出指定文件的内容
     bool changeDir(const std::string& path);//cd 切换目录
-    bool saveFile(const std::string& src, const std::string& filename);//save 外部文件写入磁盘中
+    bool saveFile(const std::string& outsideFile, const std::string& dst);//save 外部文件写入磁盘中
     bool createDir(const std::string& path);//mkdir 创建目录
     bool deleteFile(const std::string& path);//rm 删除文件
     bool copyFile(const std::string& src, const std::string& dst);//cp 复制文件
+    bool exportFile(const std::string& src, const std::string& outsideFile);//export 磁盘中的文件导出到本地
+    
 
+    std::fstream disk;//整个磁盘映射到该变量
 
 private:
     User *user;//每个fs对应一个user
 
-    std::fstream disk;//整个磁盘映射到该变量
     std::string disk_path;
 
     SuperBlock sblock;
