@@ -50,6 +50,7 @@ public:
     bool deleteFile(const std::string& path);//rm 删除文件
     bool copyFile(const std::string& src, const std::string& dst);//cp 复制文件
     bool exportFile(const std::string& src, const std::string& outsideFile);//export 磁盘中的文件导出到本地
+    bool renameFile(const std::string& filename, const std::string& newname);//rename 修改文件名
     
 
     std::fstream disk;//整个磁盘映射到该变量

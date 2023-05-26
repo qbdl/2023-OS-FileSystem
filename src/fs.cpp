@@ -573,3 +573,59 @@ bool FileSystem::exportFile(const string& src, const string& outsideFile)
 
     return true;    
 }
+
+//rename 修改文件名
+bool FileSystem::renameFile(const string& filename, const string& newname)
+{
+    /* 父级 目录项修改 */
+    int dir_ino,ino;
+    string name,new_name;
+
+    //exists
+    dir_ino=find_fa_ino(filename);
+    ino=find_from_path(filename);
+    if (dir_ino == FAIL || ino == FAIL ) {
+        cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
+        return false;
+    }
+
+    //是否在同级目录下
+    name = filename.substr(filename.rfind('/') + 1);
+    new_name=newname.substr(filename.rfind('/') + 1);
+
+    if(dir_ino!=find_fa_ino(newname)){
+        cerr << name << "and " << new_name << " are not under the same folder!" << "\n";
+        return false;  
+    }
+
+    //是否为普通文件
+    Inode &inode=inodes[ino];
+    if (!(inode.i_mode & Inode::RegularFile)) {
+        cerr << "rename: " << filename << ": Is not a Regular File!" << "\n";
+        return false;
+    }
+
+    //修改
+    bool found = false;
+    Inode &dir_inode=inodes[dir_ino];
+    auto entrys=dir_inode.get_entry();
+    for (auto& entry : entrys) {
+        if (entry.m_ino && strcmp(entry.m_name, name.c_str()) == 0) {
+            ino = entry.m_ino;
+            found = true;
+            strcpy(entry.m_name,new_name.c_str());
+            break;
+        }
+    }
+    if (!found){
+        cerr << "Failed to find file: " << filename<< "\n";
+        return false;
+    } 
+    if(dir_inode.set_entry(entrys)==FAIL){
+        cerr << "Failed to set entry for " << newname << "\n";
+        return false;
+    }
+
+    
+    return true;
+}

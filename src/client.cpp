@@ -58,12 +58,12 @@ int main()
             fs.deleteFile(tokens[1]);
         else if(tokens[0] == "cp")
             fs.copyFile(tokens[1], tokens[2]);
-        else if(tokens[0] == "save"){
+        else if(tokens[0] == "save")
             fs.saveFile(tokens[1], tokens[2]);
-        }
-        else if(tokens[0] == "export"){
+        else if(tokens[0] == "export")
             fs.exportFile(tokens[1], tokens[2]);
-        }
+        else if(tokens[0] == "rename")
+            fs.renameFile(tokens[1], tokens[2]);
         else if(tokens[0] == "exit")
             break;
         /* 
@@ -75,9 +75,6 @@ int main()
         }
         else if(tokens[0] == "write"){
             fs.writeFile(tokens[1]);
-        }
-        else if(tokens[0] == "rename"){
-            fs.renameFile(tokens[1], tokens[2]);
         }
         else if(tokens[0] == "help"){
             fs.help();
