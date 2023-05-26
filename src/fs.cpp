@@ -329,6 +329,88 @@ bool FileSystem::initialize_filetree_from_externalFile(const string &path, const
 
 
 /* 命令实现 */
+string FileSystem::pCommand(int uid, string& command)
+{
+    set_u(uid);
+
+    // 解析命令
+    istringstream iss(input);
+    string s;
+    vector<string> tokens;
+    while(iss >> s)
+        tokens.emplace_back(s);
+    if (tokens.empty()) {
+        continue;
+    }
+
+    if(tokens[0] == "init"){
+        // if(!fs.initialize_filetree_from_externalFile(tokens[1],user.current_dir_ino)) {
+        if(!fs.initialize_filetree_from_externalFile("my_test",user.current_dir_ino)) {
+            cout << "Initialize failed!" << "\n";
+            return -1;
+        }
+        else
+            cout << "Initialize success!" << "\n";
+    }
+    else if(tokens[0] == "ls"){
+        if(tokens.size() >= 2)
+            result = ls(tokens[1]);
+        else
+            result = ls("");
+    }
+    else if(tokens[0] == "cd"){
+        if(changeDir(tokens[1]))
+            result = "cd : success!";
+    }
+    else if(tokens[0] == "mkdir"){
+        if(createDir(user_[uid_].current_dir_,tokens[1]))
+            result = "mkdir : success!";
+    }
+    else if(tokens[0] == "cat"){
+        result = cat(tokens[1]);
+    }
+    else if(tokens[0] == "rm"){
+        if(deleteFile(tokens[1]))
+            result = "rm : success!";
+    }
+    else if(tokens[0] == "cp"){
+        if(copyFile(tokens[1], tokens[2]))
+            result = "cp : success!";
+    }
+    else if(tokens[0] == "save"){
+        if(saveFile(tokens[1], tokens[2]))
+            result = "save : success!";
+    }
+    else if(tokens[0] == "export"){
+        if(exportFile(tokens[1], tokens[2]))
+            result = "export : success!";
+    }
+    else if(tokens[0] == "mv"){
+         if(moveFile(tokens[1], tokens[2]))
+            result = "move : success!";
+    }
+    else if(tokens[0] == "rename")
+        if(renameFile(tokens[1], tokens[2]))
+            result = "rename : success!";
+    else {
+        result = "Invalid command!";
+    }
+    
+    /* 
+    else if(tokens[0] == "touch"){
+        fs.createFile(tokens[1]);
+    }
+    else if(tokens[0] == "write"){
+        fs.writeFile(tokens[1]);
+    }
+    else if(tokens[0] == "help"){
+        fs.help();
+    else if(tokens[0] == "exit")
+        break;
+    } */
+    return result;
+}
+
 
 //ls 列出目录的内容
 bool FileSystem::ls(const string& path)

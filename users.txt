@@ -1,6 +1,5 @@
 1 alice 123456 1
 2 bob abcdef 2
 3 charlie qwerty 1
-4 root passwd 3
 5 qbdl 123 3
-6 root lkj 4
+6 root lkj 3

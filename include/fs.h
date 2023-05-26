@@ -41,6 +41,7 @@ public:
     int find_fa_ino(const std::string& path);//上级文件夹ino
 
 public:
+    std::string pCommand(int uid, std::string& command);    
     /* 外部命令 */
     bool ls(const std::string& path);//ls 列出目录
     bool cat(const std::string& path);//cat 输出指定文件的内容

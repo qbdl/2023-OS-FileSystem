@@ -1,15 +1,18 @@
 #include"../include/user.h"
+#include"../include/fs.h"
 #include<iostream>
 #include<string>
 #include<vector>
 #include<fstream>
-
-/* test */
-#include <unistd.h>
-#include <stdio.h>
-#include <limits.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <thread>
 
 using namespace std;
+
+FileSystem fs("myDisk.img");
+int login(int clientSocket);
 
 //验证登录
 User verify(string username,string password)
@@ -76,4 +79,15 @@ User login()
             cout << "Incorrect username or password"<<"\n";
         }
     }
+}
+
+void handleClient(int clientSocket) 
+{
+    
+}
+
+int main() 
+{
+
+    return 0;
 }
