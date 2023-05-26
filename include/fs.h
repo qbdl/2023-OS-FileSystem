@@ -51,7 +51,7 @@ public:
     bool copyFile(const std::string& src, const std::string& dst);//cp 复制文件
     bool exportFile(const std::string& src, const std::string& outsideFile);//export 磁盘中的文件导出到本地
     bool renameFile(const std::string& filename, const std::string& newname);//rename 修改文件名
-    
+    bool moveFile(const std::string& src, const std::string& dst);//mv 将一个文件从一个目录移动到另一个目录
 
     std::fstream disk;//整个磁盘映射到该变量
 

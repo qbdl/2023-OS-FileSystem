@@ -585,7 +585,7 @@ bool FileSystem::renameFile(const string& filename, const string& newname)
     dir_ino=find_fa_ino(filename);
     ino=find_from_path(filename);
     if (dir_ino == FAIL || ino == FAIL ) {
-        cerr << "Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
+        cerr << "rm : Failed to find directory: " << filename.substr(0, filename.rfind('/')) << "\n";
         return false;
     }
 
@@ -594,14 +594,14 @@ bool FileSystem::renameFile(const string& filename, const string& newname)
     new_name=newname.substr(filename.rfind('/') + 1);
 
     if(dir_ino!=find_fa_ino(newname)){
-        cerr << name << "and " << new_name << " are not under the same folder!" << "\n";
+        cerr << "rm : " << name << "and " << new_name << " are not under the same folder!" << "\n";
         return false;  
     }
 
     //是否为普通文件
     Inode &inode=inodes[ino];
     if (!(inode.i_mode & Inode::RegularFile)) {
-        cerr << "rename: " << filename << ": Is not a Regular File!" << "\n";
+        cerr << "rm : " << filename << ": Is not a Regular File!" << "\n";
         return false;
     }
 
@@ -618,14 +618,49 @@ bool FileSystem::renameFile(const string& filename, const string& newname)
         }
     }
     if (!found){
-        cerr << "Failed to find file: " << filename<< "\n";
+        cerr << "rm : Failed to find file: " << filename<< "\n";
         return false;
     } 
     if(dir_inode.set_entry(entrys)==FAIL){
-        cerr << "Failed to set entry for " << newname << "\n";
+        cerr << "rm : Failed to set entry for " << newname << "\n";
         return false;
     }
 
     
+    return true;
+}
+
+//mv 将一个文件从一个目录移动到另一个目录
+bool FileSystem::moveFile(const string& src, const string& dst)
+{
+    /* 两个父级目录修改目录项 */
+
+    int src_ino=find_from_path(src);
+    int src_dir_ino=find_fa_ino(src);
+    int dst_ino;
+    int dst_dir_ino=find_fa_ino(dst);
+
+    if(src_ino==FAIL || src_dir_ino == FAIL){
+        cerr << "mv : Failed to find file: " << src << "\n";
+        return false;
+    }
+    if(dst_dir_ino ==FAIL){
+        cerr << "mv : Failed to find directory: "<< dst.substr(0, dst.rfind('/')) << "\n";
+        return false;
+    }
+
+    Inode & src_inode=inodes[src_ino];
+    if(!(src_inode.i_mode & Inode::FileType::RegularFile)){
+        cerr << "mv : "<< src <<" is not a Regular File" << "\n";
+        return false;
+    }
+
+    //src
+    Inode &src_dir_inode=inodes[src_dir_ino];
+    src_dir_inode.delete_file_entry(src.substr(src.rfind('/')+1));
+    //dst
+    Inode &dst_dir_inode=inodes[dst_dir_ino];
+    dst_dir_inode.add_file_entry(dst.substr(dst.rfind('/')+1),src_ino);
+
     return true;
 }

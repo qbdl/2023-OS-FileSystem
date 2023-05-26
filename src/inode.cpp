@@ -96,7 +96,7 @@ vector<DirectoryEntry> Inode::get_entry()
 }
 
 //设置 所有目录项
-int Inode::set_entry(std::vector<DirectoryEntry>& entrys)
+int Inode::set_entry(vector<DirectoryEntry>& entrys)
 {
     if(!write_at(0, (char *)entrys.data(), i_size)) {
         cerr << "setEntry: write directory entries failed." << "\n";
@@ -106,7 +106,7 @@ int Inode::set_entry(std::vector<DirectoryEntry>& entrys)
 }
 
 // 删除目录项，返回Inode号，但是没有删除Inode(调用者保证删除目录时子文件的处理)
-int Inode::delete_file_entry(const std::string &fileName)
+int Inode::delete_file_entry(const string &fileName)
 {
     auto entrys = get_entry();
     int ino;
@@ -123,7 +123,7 @@ int Inode::delete_file_entry(const std::string &fileName)
         }
     }
     if(!found) {
-        std::cerr << "deleteFile: File not found." << "\n";
+        cerr << "Delete_File_Entry: File not found." << "\n";
         return FAIL;
     }
 
@@ -137,6 +137,36 @@ int Inode::delete_file_entry(const std::string &fileName)
         pop_back_block();
 
     return ino;
+}
+
+//利用Inode号 增加目录项，但是没有新建Inode(调用者保证新增目录时子文件的处理)
+int Inode::add_file_entry(const string &fileName,int src_ino)
+{
+    auto entrys = get_entry();
+
+    bool found = false;
+    for (auto entry:entrys) {
+        if(entry.m_ino==src_ino) {
+            found = true;
+            break;
+        }
+    }
+    if(found) {
+        cerr << "Add_File_Entry: File has existed." << "\n";
+        return FAIL;
+    }
+    entrys.emplace_back(DirectoryEntry(src_ino,fileName.c_str()));
+
+    i_size += ENTRY_SIZE;                       // 目录文件扩大
+    if (i_size % BLOCK_SIZE == 0)               // 需要新增一块物理块
+        push_back_block();
+
+
+    // 更新目录文件内容
+    if(set_entry(entrys) == FAIL)
+        return FAIL;
+
+    return 0;   
 }
 
 

@@ -64,14 +64,13 @@ int main()
             fs.exportFile(tokens[1], tokens[2]);
         else if(tokens[0] == "rename")
             fs.renameFile(tokens[1], tokens[2]);
+        else if(tokens[0] == "mv")
+            fs.moveFile(tokens[1], tokens[2]);
         else if(tokens[0] == "exit")
             break;
         /* 
         else if(tokens[0] == "touch"){
             fs.createFile(tokens[1]);
-        }
-        else if(tokens[0] == "mv"){
-            fs.moveFile(tokens[1], tokens[2]);
         }
         else if(tokens[0] == "write"){
             fs.writeFile(tokens[1]);
