@@ -3,7 +3,7 @@
 
 运行环境：Linux
 
-参考https://github.com/soryxie/fs_tjos的实现逻辑
+参考 https://github.com/soryxie/fs_tjos 的实现逻辑
 
 实现多用户二级文件管理系统
 
@@ -30,7 +30,7 @@ make all #编译文件
     mkdir new_folder
 ```
 
-
+![image-20230629204933763](./assets/image-20230629204933763.png)
 
 ### 二、实现过程(按照commit进行增量迭代)
 
