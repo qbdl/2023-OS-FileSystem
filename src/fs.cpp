@@ -329,28 +329,24 @@ bool FileSystem::initialize_filetree_from_externalFile(const string &path, const
 
 
 /* 命令实现 */
-string FileSystem::pCommand(int uid, string& command)
+string FileSystem::pCommand(User &t_user, string& command)
 {
-    set_u(uid);
+    // set_u(&t_user);
 
     // 解析命令
-    istringstream iss(input);
+    istringstream iss(command);
     string s;
     vector<string> tokens;
     while(iss >> s)
         tokens.emplace_back(s);
-    if (tokens.empty()) {
-        continue;
-    }
 
+    string result;
     if(tokens[0] == "init"){
-        // if(!fs.initialize_filetree_from_externalFile(tokens[1],user.current_dir_ino)) {
-        if(!fs.initialize_filetree_from_externalFile("my_test",user.current_dir_ino)) {
-            cout << "Initialize failed!" << "\n";
-            return -1;
-        }
+        // if(!initialize_filetree_from_externalFile(tokens[1],t_user.current_dir_ino))
+        if(!initialize_filetree_from_externalFile("my_test",t_user.current_dir_ino))
+            result = "Initialize failed!";
         else
-            cout << "Initialize success!" << "\n";
+            result = "Initialize success!";
     }
     else if(tokens[0] == "ls"){
         if(tokens.size() >= 2)
@@ -363,7 +359,7 @@ string FileSystem::pCommand(int uid, string& command)
             result = "cd : success!";
     }
     else if(tokens[0] == "mkdir"){
-        if(createDir(user_[uid_].current_dir_,tokens[1]))
+        if(createDir(tokens[1]))
             result = "mkdir : success!";
     }
     else if(tokens[0] == "cat"){
